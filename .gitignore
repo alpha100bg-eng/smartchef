@@ -1,0 +1,25 @@
+# Secrets — NEVER commit. SUPABASE_SERVICE_KEY bypasses RLS.
+.env
+.env.*
+!.env.example
+
+# Identifiants de comptes de test (mots de passe en clair)
+*.local.txt
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+npm-debug.*
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/

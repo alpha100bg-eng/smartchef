@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "SmartChef AI",
+    "slug": "smartchef-ai",
+    "scheme": "smartchef",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "platforms": ["ios", "android", "web"],
+    "android": {
+      "package": "com.alpha.smartchef"
+    },
+    "ios": {
+      "bundleIdentifier": "com.alpha.smartchef"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "SmartChef a besoin d'accéder à tes photos pour analyser ton frigo.",
+          "cameraPermission": "SmartChef a besoin de la caméra pour prendre une photo de ton frigo."
+        }
+      ]
+    ]
+  }
+}
