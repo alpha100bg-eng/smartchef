@@ -1,0 +1,46 @@
+name: Tâches planifiées
+
+# Remplace un planificateur payant : GitHub Actions déclenche les deux jobs
+# internes de l'API. Ces endpoints sont protégés par CRON_SECRET, jamais par
+# un JWT utilisateur.
+on:
+  schedule:
+    # 07:00 UTC — alertes de péremption, le matin avant les courses.
+    - cron: "0 7 * * *"
+    # 03:00 UTC — filet RGPD sur les photos orphelines, heure creuse.
+    - cron: "0 3 * * *"
+  workflow_dispatch: # permet de déclencher à la main depuis l'onglet Actions
+
+jobs:
+  expiry-check:
+    # Ne tourne que pour la planification du matin (ou en manuel).
+    if: github.event.schedule == '0 7 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Alertes de péremption
+        run: |
+          code=$(curl -sS -o response.json -w "%{http_code}" \
+            -X POST "${API_URL}/jobs/expiry-check" \
+            -H "Authorization: Bearer ${CRON_SECRET}")
+          echo "HTTP $code"
+          cat response.json
+          test "$code" = "200"
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+  photo-cleanup:
+    if: github.event.schedule == '0 3 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Nettoyage des photos orphelines
+        run: |
+          code=$(curl -sS -o response.json -w "%{http_code}" \
+            -X POST "${API_URL}/jobs/photo-cleanup" \
+            -H "Authorization: Bearer ${CRON_SECRET}")
+          echo "HTTP $code"
+          cat response.json
+          test "$code" = "200"
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

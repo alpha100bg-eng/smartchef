@@ -1,0 +1,40 @@
+name: Tests
+
+# Empêche de déployer du code cassé : la suite tourne à chaque push.
+# Les tests "live" (qui appellent le vrai projet Supabase) sont ignorés ici —
+# ils exigent des secrets réels et sont lancés à la main.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.12"
+      # Les scripts natifs échouent sur certains paquets (dette connue,
+      # voir README) ; ils ne sont pas nécessaires pour typecheck et tests.
+      - run: npm ci --ignore-scripts
+      - run: npx tsc --noEmit
+      - run: npx jest --ci

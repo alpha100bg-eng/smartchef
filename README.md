@@ -40,6 +40,57 @@ Voir §8 de `docs/spec.md`. **MVP complet — Phases 0 à 5 livrées :**
 - **Phase 4** — Liste de courses (F7) : `/shopping-list/from-plan` → liste par rayon, dédupliquée, soustraction inventaire (couche 1 stricte + Haiku conservateur), prix estimés « ~ ».
 - **Phase 5** — Alertes péremption (F4) : cron `/jobs/expiry-check` (protégé par `CRON_SECRET`), fenêtre 3 jours, anti-spam avec réarmement automatique au changement de date, push Expo, deep-link vers la recherche.
 
+## Déploiement (coût fixe : 0 €)
+
+L'API tourne sur **Google Cloud Run** (offre gratuite généreuse, se met en veille
+quand personne ne l'utilise) et les tâches planifiées sur **GitHub Actions**.
+
+### 1. Avant tout — régénérer les secrets
+
+Voir la section « Secrets à régénérer » plus bas. Ne pas déployer avec les
+valeurs actuelles.
+
+### 2. Déployer l'API
+
+Depuis `smartchef/api/`, avec le [gcloud CLI](https://cloud.google.com/sdk/docs/install)
+installé et connecté :
+
+```bash
+gcloud run deploy smartchef-api \
+  --source . \
+  --region europe-west1 \
+  --allow-unauthenticated \
+  --set-env-vars "SUPABASE_URL=...,SUPABASE_JWKS_URL=...,CORS_ORIGINS=https://ton-app" \
+  --set-env-vars "SUPABASE_SERVICE_KEY=...,ANTHROPIC_API_KEY=...,CRON_SECRET=..."
+```
+
+`--allow-unauthenticated` est correct : l'API fait sa propre authentification
+(JWT Supabase pour les utilisateurs, `CRON_SECRET` pour les jobs).
+
+Cloud Run fournit le port via `$PORT` — le Dockerfile en tient compte.
+
+> Pour de vrais secrets, préférer Secret Manager (`--set-secrets`) plutôt que
+> `--set-env-vars`, qui les rend lisibles dans la console.
+
+### 3. Pointer l'app sur l'API déployée
+
+Dans `app/.env` : `EXPO_PUBLIC_API_URL=https://smartchef-api-xxxxx.run.app`
+Et ajouter l'origine du front à `CORS_ORIGINS` côté API.
+
+### 4. Activer les tâches planifiées
+
+Pousser le dépôt sur GitHub, puis dans **Settings → Secrets and variables →
+Actions**, créer deux secrets :
+
+| Secret | Valeur |
+|---|---|
+| `API_URL` | l'URL Cloud Run, sans slash final |
+| `CRON_SECRET` | le même que côté API |
+
+Le workflow `.github/workflows/cron.yml` s'exécute ensuite tout seul
+(péremption à 07:00 UTC, nettoyage photos à 03:00 UTC) et peut être déclenché
+à la main depuis l'onglet **Actions**.
+
 ### Cron à brancher au déploiement
 
 `POST /jobs/expiry-check` doit être appelé **une fois par jour** par un planificateur externe (GitHub Actions, `pg_cron`, cron d'hôte), avec l'en-tête `Authorization: Bearer $CRON_SECRET`. Idem pour `/jobs/photo-cleanup`. Ces endpoints ne sont **jamais** appelables avec un JWT utilisateur.
