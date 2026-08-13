@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import {
   latestMealPlanId,
@@ -15,6 +16,16 @@ import {
   type ShoppingItem,
   type ShoppingListView,
 } from "@/lib/shopping";
+import { colors, radius, spacing, font, shadow } from "@/lib/theme";
+
+const AISLE_ICONS: Record<string, React.ComponentProps<typeof Ionicons>["name"]> = {
+  "Fruits et légumes": "nutrition-outline",
+  "Produits laitiers": "water-outline",
+  "Viande et poisson": "fish-outline",
+  Épicerie: "basket-outline",
+  Surgelés: "snow-outline",
+  Boulangerie: "pizza-outline",
+};
 
 export default function ShoppingList() {
   const [list, setList] = useState<ShoppingListView | null>(null);
@@ -78,53 +89,87 @@ export default function ShoppingList() {
     setInFridge((prev) => prev.filter((n) => n !== name));
   }
 
-  // group buy items by aisle
   const byAisle: Record<string, { item: ShoppingItem; index: number }[]> = {};
   items.forEach((item, index) => {
     const aisle = item.aisle || "Autres";
     (byAisle[aisle] ??= []).push({ item, index });
   });
   const aisles = Object.keys(byAisle).sort();
+  const done = items.filter((i) => i.checked).length;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Liste de courses</Text>
+    <View style={styles.screen}>
+      <Text style={styles.title}>Mes courses</Text>
 
-      {list && list.estimated_total != null && (
-        <Text style={styles.total}>Estimation : ~{list.estimated_total} €</Text>
+      {list && (
+        <View style={styles.summary}>
+          <View style={styles.summaryBlock}>
+            <Text style={styles.summaryValue}>~{list.estimated_total ?? 0} €</Text>
+            <Text style={styles.summaryLabel}>Estimation</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View style={styles.summaryBlock}>
+            <Text style={styles.summaryValue}>
+              {done}/{items.length}
+            </Text>
+            <Text style={styles.summaryLabel}>Cochés</Text>
+          </View>
+        </View>
       )}
       {error && <Text style={styles.error}>{error}</Text>}
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator />
+          <ActivityIndicator color={colors.primary} />
           <Text style={styles.muted}>Construction de la liste…</Text>
         </View>
       ) : !list ? (
-        <Text style={styles.muted}>
-          Génère ta liste à partir de ton dernier plan de repas — on retire ce que
-          tu as déjà.
-        </Text>
+        <View style={styles.center}>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="cart-outline" size={32} color={colors.primary} />
+          </View>
+          <Text style={styles.emptyTitle}>Rien à racheter en double</Text>
+          <Text style={styles.emptyBody}>
+            Je pars de ton plan de repas et je retire ce que tu as déjà.
+          </Text>
+        </View>
       ) : (
-        <ScrollView style={styles.list}>
+        <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
           {aisles.map((aisle) => (
             <View key={aisle} style={styles.aisleBlock}>
-              <Text style={styles.aisleTitle}>{aisle}</Text>
-              {byAisle[aisle].map(({ item, index }) => (
-                <Pressable
-                  key={index}
-                  style={styles.row}
-                  onPress={() => toggle(index)}
-                >
-                  <Text style={styles.check}>{item.checked ? "☑" : "☐"}</Text>
-                  <Text style={[styles.itemName, item.checked && styles.itemDone]}>
-                    {[item.quantity, item.unit, item.name].filter(Boolean).join(" ")}
-                  </Text>
-                  {item.estimated_price != null && (
-                    <Text style={styles.price}>~{item.estimated_price} €</Text>
-                  )}
-                </Pressable>
-              ))}
+              <View style={styles.aisleHead}>
+                <Ionicons
+                  name={AISLE_ICONS[aisle] ?? "pricetag-outline"}
+                  size={15}
+                  color={colors.textSecondary}
+                />
+                <Text style={styles.aisleTitle}>{aisle}</Text>
+              </View>
+              <View style={styles.aisleCard}>
+                {byAisle[aisle].map(({ item, index }, k) => (
+                  <Pressable
+                    key={index}
+                    style={[styles.row, k > 0 && styles.rowBorder]}
+                    onPress={() => toggle(index)}
+                    accessibilityLabel={`${item.checked ? "Décocher" : "Cocher"} ${item.name}`}
+                  >
+                    <Ionicons
+                      name={item.checked ? "checkbox" : "square-outline"}
+                      size={21}
+                      color={item.checked ? colors.primary : colors.textMuted}
+                    />
+                    <Text
+                      style={[styles.itemName, item.checked && styles.itemDone]}
+                      numberOfLines={1}
+                    >
+                      {[item.quantity, item.unit, item.name].filter(Boolean).join(" ")}
+                    </Text>
+                    {item.estimated_price != null && (
+                      <Text style={styles.price}>~{item.estimated_price} €</Text>
+                    )}
+                  </Pressable>
+                ))}
+              </View>
             </View>
           ))}
 
@@ -132,19 +177,21 @@ export default function ShoppingList() {
             <View style={styles.fridgeBlock}>
               <Text style={styles.fridgeTitle}>Déjà dans ton frigo (à vérifier)</Text>
               {inFridge.map((name) => (
-                <View key={name} style={styles.row}>
-                  <Text style={styles.itemName}>{name}</Text>
-                  <Pressable onPress={() => readd(name)}>
+                <View key={name} style={styles.fridgeRow}>
+                  <Text style={styles.fridgeName}>{name}</Text>
+                  <Pressable onPress={() => readd(name)} hitSlop={8}>
                     <Text style={styles.readd}>+ ajouter</Text>
                   </Pressable>
                 </View>
               ))}
             </View>
           )}
+          <View style={{ height: spacing.md }} />
         </ScrollView>
       )}
 
       <Pressable style={styles.primaryBtn} onPress={generate} disabled={loading}>
+        <Ionicons name="cart" size={18} color={colors.onPrimary} />
         <Text style={styles.primaryBtnText}>
           {list ? "Regénérer la liste" : "Générer la liste"}
         </Text>
@@ -154,40 +201,93 @@ export default function ShoppingList() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 10 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 8 },
-  title: { fontSize: 22, fontWeight: "700" },
-  total: { fontSize: 15, color: "#1a7f37", fontWeight: "600" },
-  muted: { color: "#888" },
-  error: { color: "#c00" },
-  list: { flex: 1 },
-  aisleBlock: { marginBottom: 14 },
-  aisleTitle: { fontSize: 15, fontWeight: "700", marginBottom: 4, color: "#444" },
-  row: {
+  screen: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg, gap: spacing.sm },
+  title: { fontSize: font.title, fontWeight: "700", color: colors.text },
+
+  summary: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    ...shadow.card,
   },
-  check: { fontSize: 18 },
-  itemName: { flex: 1, fontSize: 15 },
-  itemDone: { textDecorationLine: "line-through", color: "#aaa" },
-  price: { color: "#888", fontSize: 13 },
-  fridgeBlock: {
-    marginTop: 10,
-    padding: 12,
-    backgroundColor: "#f7f7f7",
-    borderRadius: 8,
-  },
-  fridgeTitle: { fontWeight: "700", color: "#666", marginBottom: 6 },
-  readd: { color: "#1a7f37", fontWeight: "600" },
-  primaryBtn: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    padding: 16,
+  summaryBlock: { flex: 1, alignItems: "center" },
+  summaryDivider: { width: 1, height: 28, backgroundColor: colors.border },
+  summaryValue: { fontSize: font.heading, fontWeight: "700", color: colors.text },
+  summaryLabel: { fontSize: font.tiny, color: colors.textSecondary },
+
+  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: spacing.xs },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
     alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.xs,
   },
-  primaryBtnText: { color: "#fff", fontWeight: "700" },
+  emptyTitle: { fontSize: font.heading, fontWeight: "600", color: colors.text },
+  emptyBody: {
+    fontSize: font.body,
+    color: colors.textSecondary,
+    textAlign: "center",
+    paddingHorizontal: spacing.xl,
+    lineHeight: 21,
+  },
+  muted: { color: colors.textSecondary, fontSize: font.body },
+  error: { color: colors.danger },
+
+  list: { flex: 1 },
+  aisleBlock: { marginBottom: spacing.md },
+  aisleHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginBottom: spacing.xs,
+  },
+  aisleTitle: { fontSize: font.small, fontWeight: "700", color: colors.textSecondary },
+  aisleCard: {
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    ...shadow.card,
+  },
+  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: 12 },
+  rowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
+  itemName: { flex: 1, fontSize: font.body, color: colors.text },
+  itemDone: { textDecorationLine: "line-through", color: colors.textMuted },
+  price: { color: colors.textSecondary, fontSize: font.small },
+
+  fridgeBlock: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  fridgeTitle: {
+    fontWeight: "700",
+    color: colors.primaryDark,
+    marginBottom: spacing.xs,
+    fontSize: font.small,
+  },
+  fridgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 7,
+  },
+  fridgeName: { color: colors.text, fontSize: font.body, flex: 1 },
+  readd: { color: colors.primaryDark, fontWeight: "700", fontSize: font.small },
+
+  primaryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingVertical: 17,
+    ...shadow.button,
+  },
+  primaryBtnText: { color: colors.onPrimary, fontWeight: "700", fontSize: font.body },
 });

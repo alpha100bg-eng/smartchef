@@ -32,7 +32,9 @@ test("generate shows aisles, estimate, and the already-in-fridge section", async
   fireEvent.press(getByText("Générer la liste"));
 
   await findByText("Viande et poisson");
-  await findByText(/Estimation : ~8.5/);
+  // The estimate is a stat block: amount and label are separate elements.
+  await findByText(/8\.5/);
+  await findByText("Estimation");
   await findByText("Déjà dans ton frigo (à vérifier)");
   await waitFor(() => expect(mockBuild).toHaveBeenCalledWith("plan-1"));
 

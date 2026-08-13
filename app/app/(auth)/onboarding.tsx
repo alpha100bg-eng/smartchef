@@ -3,6 +3,7 @@ import { View, TextInput, Text, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 
 import { supabase } from "@/lib/supabase";
+import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 /** Free-text fields reach the DB as numbers — "abc" must become null, not NaN. */
 function toNumberOrNull(value: string): number | null {
@@ -79,9 +80,13 @@ export default function Onboarding() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Ton profil</Text>
+      <Text style={styles.subtitle}>
+        Ces infos guident les recettes et le plan de repas.
+      </Text>
 
       <TextInput
         style={styles.input}
+        placeholderTextColor={colors.textMuted}
         placeholder="Budget hebdomadaire (€)"
         keyboardType="numeric"
         value={budgetWeekly}
@@ -89,6 +94,7 @@ export default function Onboarding() {
       />
       <TextInput
         style={styles.input}
+        placeholderTextColor={colors.textMuted}
         placeholder="Temps par repas (min)"
         keyboardType="numeric"
         value={timePerMealMin}
@@ -96,18 +102,21 @@ export default function Onboarding() {
       />
       <TextInput
         style={styles.input}
+        placeholderTextColor={colors.textMuted}
         placeholder="Régime (ex: omnivore, végétarien)"
         value={dietType}
         onChangeText={setDietType}
       />
       <TextInput
         style={styles.input}
+        placeholderTextColor={colors.textMuted}
         placeholder="Objectifs (séparés par une virgule)"
         value={goals}
         onChangeText={setGoals}
       />
       <TextInput
         style={styles.input}
+        placeholderTextColor={colors.textMuted}
         placeholder="Allergies (séparées par une virgule)"
         value={allergies}
         onChangeText={setAllergies}
@@ -123,21 +132,37 @@ export default function Onboarding() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24, gap: 12 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 16, textAlign: "center" },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    backgroundColor: colors.bg,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  title: { fontSize: font.title, fontWeight: "700", color: colors.text, textAlign: "center" },
+  subtitle: {
+    fontSize: font.small,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginBottom: spacing.md,
+  },
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: colors.card,
+    borderRadius: radius.sm,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    fontSize: font.body,
+    color: colors.text,
+    ...shadow.card,
   },
   button: {
-    backgroundColor: "#111",
-    borderRadius: 8,
-    padding: 14,
+    backgroundColor: colors.primary,
+    borderRadius: radius.pill,
+    paddingVertical: 16,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: spacing.sm,
+    ...shadow.button,
   },
-  buttonText: { color: "#fff", fontWeight: "600" },
-  error: { color: "#c00" },
+  buttonText: { color: colors.onPrimary, fontWeight: "700", fontSize: font.body },
+  error: { color: colors.danger, fontSize: font.small },
 });

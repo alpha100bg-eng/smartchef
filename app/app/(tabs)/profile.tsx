@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { View, Text, Pressable, ActivityIndicator, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { supabase } from "@/lib/supabase";
 import { unregisterExpiryAlerts } from "@/lib/notifications";
+import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 type Profile = {
   display_name: string | null;
@@ -64,19 +66,32 @@ export default function ProfileScreen() {
     }
   }
 
+  const initial = (email ?? "?").trim().charAt(0).toUpperCase();
+
   return (
-    <View style={styles.container}>
+    <View style={styles.screen}>
       <Text style={styles.title}>Profil</Text>
 
-      {email && <Text style={styles.email}>{email}</Text>}
+      <View style={styles.identity}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{initial}</Text>
+        </View>
+        <Text style={styles.email} numberOfLines={1}>
+          {email ?? "—"}
+        </Text>
+      </View>
 
       {profile && (
         <View style={styles.card}>
-          <Row label="Budget hebdo" value={profile.budget_weekly ? `${profile.budget_weekly} €` : "—"} />
-          <Row label="Temps par repas" value={profile.time_per_meal_min ? `${profile.time_per_meal_min} min` : "—"} />
-          <Row label="Régime" value={profile.diet_type || "—"} />
-          <Row label="Objectifs" value={profile.goals?.length ? profile.goals.join(", ") : "—"} />
-          <Row label="Allergies" value={allergies.length ? allergies.join(", ") : "aucune"} />
+          <Row icon="wallet-outline" label="Budget hebdo"
+            value={profile.budget_weekly ? `${profile.budget_weekly} €` : "—"} />
+          <Row icon="time-outline" label="Temps par repas"
+            value={profile.time_per_meal_min ? `${profile.time_per_meal_min} min` : "—"} />
+          <Row icon="leaf-outline" label="Régime" value={profile.diet_type || "—"} />
+          <Row icon="flag-outline" label="Objectifs"
+            value={profile.goals?.length ? profile.goals.join(", ") : "—"} />
+          <Row icon="alert-circle-outline" label="Allergies"
+            value={allergies.length ? allergies.join(", ") : "aucune"} last />
         </View>
       )}
 
@@ -84,53 +99,92 @@ export default function ProfileScreen() {
 
       <View style={styles.spacer} />
 
-      <Pressable style={styles.signOutBtn} onPress={signOut} disabled={signingOut}>
+      <Pressable
+        style={styles.signOutBtn}
+        onPress={signOut}
+        disabled={signingOut}
+        accessibilityLabel="Se déconnecter de l'application"
+      >
         {signingOut ? (
-          <ActivityIndicator color="#c00" />
+          <ActivityIndicator color={colors.danger} />
         ) : (
-          <Text style={styles.signOutText}>Se déconnecter</Text>
+          <>
+            <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+            <Text style={styles.signOutText}>Se déconnecter</Text>
+          </>
         )}
       </Pressable>
     </View>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({
+  icon,
+  label,
+  value,
+  last,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  value: string;
+  last?: boolean;
+}) {
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, !last && styles.rowBorder]}>
+      <Ionicons name={icon} size={17} color={colors.textMuted} />
       <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>{value}</Text>
+      <Text style={styles.rowValue} numberOfLines={2}>
+        {value}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 12 },
-  title: { fontSize: 22, fontWeight: "700" },
-  email: { color: "#666" },
-  card: {
-    borderWidth: 1,
-    borderColor: "#eee",
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 8,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    gap: 12,
-  },
-  rowLabel: { color: "#888" },
-  rowValue: { fontWeight: "500", flexShrink: 1, textAlign: "right" },
-  spacer: { flex: 1 },
-  error: { color: "#c00" },
-  signOutBtn: {
-    borderWidth: 1,
-    borderColor: "#c00",
-    borderRadius: 8,
-    padding: 16,
+  screen: { flex: 1, backgroundColor: colors.bg, padding: spacing.lg, gap: spacing.sm },
+  title: { fontSize: font.title, fontWeight: "700", color: colors.text },
+
+  identity: { alignItems: "center", gap: spacing.xs, marginVertical: spacing.sm },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
     alignItems: "center",
+    justifyContent: "center",
+    ...shadow.button,
   },
-  signOutText: { color: "#c00", fontWeight: "700" },
+  avatarText: { color: colors.onPrimary, fontSize: 26, fontWeight: "700" },
+  email: { color: colors.textSecondary, fontSize: font.body },
+
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    ...shadow.card,
+  },
+  row: { flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingVertical: 13 },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  rowLabel: { color: colors.textSecondary, fontSize: font.small },
+  rowValue: {
+    flex: 1,
+    fontWeight: "500",
+    textAlign: "right",
+    color: colors.text,
+    fontSize: font.small,
+  },
+
+  spacer: { flex: 1 },
+  error: { color: colors.danger },
+  signOutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.card,
+    borderRadius: radius.pill,
+    paddingVertical: 16,
+    ...shadow.card,
+  },
+  signOutText: { color: colors.danger, fontWeight: "700", fontSize: font.body },
 });
