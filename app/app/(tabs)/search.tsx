@@ -11,7 +11,12 @@ import {
 import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-import { searchRecipes, type Recipe } from "@/lib/search";
+import {
+  searchRecipes,
+  fetchRecipeDetail,
+  type Recipe,
+  type RecipeSummary,
+} from "@/lib/search";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 const SUGGESTIONS = ["Rapide ce soir", "Moins de 20 min", "Végétarien", "Avec mon frigo"];
@@ -20,8 +25,11 @@ export default function Search() {
   // `q` arrives from the expiry-alert deep link (smartchef://search?q=lait)
   const { q } = useLocalSearchParams<{ q?: string }>();
   const [query, setQuery] = useState(q ?? "");
-  const [recipes, setRecipes] = useState<Recipe[] | null>(null);
+  const [recipes, setRecipes] = useState<RecipeSummary[] | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
+  // Full recipes are fetched lazily, keyed by their index in the list.
+  const [details, setDetails] = useState<Record<number, Recipe>>({});
+  const [detailLoading, setDetailLoading] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoRan = useRef<string | null>(null);
@@ -32,12 +40,33 @@ export default function Search() {
     setError(null);
     setLoading(true);
     setExpanded(null);
+    setDetails({});
     try {
       setRecipes(await searchRecipes(text));
     } catch (e: any) {
       setError(e.message ?? "Échec de la recherche");
     } finally {
       setLoading(false);
+    }
+  }
+
+  /** Opening a card fetches its full recipe once, then reuses it. */
+  async function openRecipe(index: number, r: RecipeSummary) {
+    if (expanded === index) {
+      setExpanded(null);
+      return;
+    }
+    setExpanded(index);
+    if (details[index]) return;
+    setDetailLoading(index);
+    try {
+      const full = await fetchRecipeDetail(r.title, r.teaser);
+      setDetails((prev) => ({ ...prev, [index]: full }));
+    } catch (e: any) {
+      setError(e.message ?? "Impossible de charger la recette");
+      setExpanded(null);
+    } finally {
+      setDetailLoading(null);
     }
   }
 
@@ -120,12 +149,9 @@ export default function Search() {
         <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
           {recipes.map((r, i) => {
             const open = expanded === i;
+            const full = details[i];
             return (
-              <Pressable
-                key={i}
-                style={styles.card}
-                onPress={() => setExpanded(open ? null : i)}
-              >
+              <Pressable key={i} style={styles.card} onPress={() => openRecipe(i, r)}>
                 <View style={styles.cardHead}>
                   <Text style={styles.recipeTitle}>{r.title}</Text>
                   <Ionicons
@@ -135,6 +161,8 @@ export default function Search() {
                   />
                 </View>
 
+                {r.teaser ? <Text style={styles.teaser}>{r.teaser}</Text> : null}
+
                 <View style={styles.stats}>
                   {r.prep_time_min != null && (
                     <Stat icon="time-outline" value={`${r.prep_time_min}`} label="min" />
@@ -142,11 +170,13 @@ export default function Search() {
                   {r.servings != null && (
                     <Stat icon="people-outline" value={`${r.servings}`} label="pers." />
                   )}
-                  <Stat
-                    icon="basket-outline"
-                    value={`${r.ingredients.length}`}
-                    label="ingrédients"
-                  />
+                  {full && (
+                    <Stat
+                      icon="basket-outline"
+                      value={`${full.ingredients.length}`}
+                      label="ingrédients"
+                    />
+                  )}
                 </View>
 
                 {r.uses_inventory.length > 0 && (
@@ -158,10 +188,17 @@ export default function Search() {
                   </View>
                 )}
 
-                {open && (
+                {open && detailLoading === i && (
+                  <View style={styles.detailLoading}>
+                    <ActivityIndicator color={colors.primary} size="small" />
+                    <Text style={styles.muted}>Écriture de la recette…</Text>
+                  </View>
+                )}
+
+                {open && full && (
                   <View style={styles.detail}>
                     <Text style={styles.sectionTitle}>Ingrédients</Text>
-                    {r.ingredients.map((ing, j) => (
+                    {full.ingredients.map((ing, j) => (
                       <View key={j} style={styles.ingRow}>
                         <Text style={styles.ingName}>{ing.name}</Text>
                         <Text style={styles.ingQty}>
@@ -170,7 +207,7 @@ export default function Search() {
                       </View>
                     ))}
                     <Text style={styles.sectionTitle}>Préparation</Text>
-                    {r.steps.map((s, j) => (
+                    {full.steps.map((s, j) => (
                       <View key={j} style={styles.stepRow}>
                         <View style={styles.stepNum}>
                           <Text style={styles.stepNumText}>{j + 1}</Text>
@@ -273,6 +310,13 @@ const styles = StyleSheet.create({
   },
   cardHead: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   recipeTitle: { flex: 1, fontSize: font.heading, fontWeight: "600", color: colors.text },
+  teaser: { color: colors.textSecondary, fontSize: font.small, lineHeight: 19 },
+  detailLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+  },
 
   stats: { flexDirection: "row", gap: spacing.xs },
   stat: {

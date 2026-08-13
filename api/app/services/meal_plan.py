@@ -33,9 +33,13 @@ SYSTEM_PROMPT = (
     "réutiliser une recette sur plusieurs créneaux (ex. petit-déjeuner) — "
     "renvoie une liste `recipes` dédupliquée et un `schedule` qui y fait "
     "référence par `recipe_index`, `day_offset` (0-6) et `slot`. Donne des "
-    "macros estimées par recette et des instructions CONCISES (3 à 5 étapes "
-    "courtes par recette). Réutilise les recettes autant que possible pour "
-    "limiter le nombre total de recettes distinctes."
+    "macros estimées par recette. "
+    "Qualité des recettes : des instructions concrètes et cuisinables, avec "
+    "quantités, températures, durées et indices de cuisson — pas de « cuire le "
+    "tout ». Vise 4 à 7 étapes utiles par recette. Réutilise les recettes du "
+    "petit-déjeuner et des collations d'un jour sur l'autre pour garder une "
+    "quinzaine de recettes distinctes au maximum, ce qui laisse la place de "
+    "détailler chacune correctement."
 )
 
 

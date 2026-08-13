@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.deps import get_profile_id
-from app.models.recipe import SearchRequest, SearchResult
+from app.models.recipe import Recipe, RecipeDetailRequest, SearchRequest, SearchResult
 from app.services import quota, search
 from app.services.quota import QuotaExceeded
 
@@ -34,4 +34,28 @@ def search_endpoint(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"search failed: {exc}",
+        )
+
+
+@router.post("/search/detail", response_model=Recipe)
+def recipe_detail_endpoint(
+    body: RecipeDetailRequest,
+    profile_id: str = Depends(get_profile_id),
+):
+    """Full recipe for one search result, generated when the user opens it.
+    Keeps the listing fast and only bills recipes that are actually read."""
+    try:
+        quota.consume(profile_id, "search")
+    except QuotaExceeded as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Limite atteinte : {exc.limit} recherches par jour. Réessaie demain.",
+        )
+
+    try:
+        return search.recipe_detail(profile_id, body.title.strip(), body.teaser.strip())
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"recipe detail failed: {exc}",
         )

@@ -9,7 +9,7 @@ from jose import jwk, jwt
 
 import app.deps as deps
 from app.main import app
-from app.models.recipe import Recipe, RecipeIngredient, SearchResult
+from app.models.recipe import Recipe, RecipeIngredient, RecipeSummary, SearchResult
 
 client = TestClient(app)
 
@@ -59,18 +59,16 @@ def token(ec_keys) -> str:
     )
 
 
-def test_search_returns_recipes(ec_keys):
+def test_search_returns_summaries_not_full_recipes(ec_keys):
+    """The listing is deliberately light: titles + teasers only. Steps and
+    ingredients cost time and money, so they come from /search/detail."""
     fake = SearchResult(
         recipes=[
-            Recipe(
+            RecipeSummary(
                 title="Omelette aux tomates",
+                teaser="Un classique rapide, moelleux à cœur.",
                 prep_time_min=15,
                 servings=2,
-                ingredients=[
-                    RecipeIngredient(name="œufs", quantity=3, unit="pièce"),
-                    RecipeIngredient(name="tomate", quantity=2, unit="pièce"),
-                ],
-                steps=["Battre les œufs", "Cuire avec les tomates"],
                 uses_inventory=["œufs", "tomate"],
             )
         ]
@@ -84,7 +82,37 @@ def test_search_returns_recipes(ec_keys):
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["recipes"][0]["title"] == "Omelette aux tomates"
+    assert body["recipes"][0]["teaser"]
     assert body["recipes"][0]["uses_inventory"] == ["œufs", "tomate"]
+    # No expensive payload in the listing.
+    assert "steps" not in body["recipes"][0]
+
+
+def test_detail_returns_the_full_recipe(ec_keys):
+    full = Recipe(
+        title="Omelette aux tomates",
+        teaser="Un classique rapide, moelleux à cœur.",
+        prep_time_min=15,
+        servings=2,
+        uses_inventory=["œufs"],
+        ingredients=[RecipeIngredient(name="œufs", quantity=3, unit="pièce")],
+        steps=["Battre les œufs", "Cuire à feu doux 4 minutes"],
+    )
+    with patch("app.services.search.recipe_detail", return_value=full):
+        resp = client.post(
+            "/search/detail",
+            headers={"Authorization": f"Bearer {token(ec_keys)}"},
+            json={"title": "Omelette aux tomates", "teaser": "Un classique"},
+        )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert len(body["steps"]) == 2
+    assert body["ingredients"][0]["name"] == "œufs"
+
+
+def test_detail_requires_auth():
+    resp = client.post("/search/detail", json={"title": "Omelette"})
+    assert resp.status_code == 403
 
 
 def test_search_rejects_empty_query(ec_keys):
