@@ -18,6 +18,7 @@ import {
   type RecipeSummary,
 } from "@/lib/search";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
+import { CookedButton } from "@/components/CookedButton";
 
 const SUGGESTIONS = ["Rapide ce soir", "Moins de 20 min", "Végétarien", "Avec mon frigo"];
 
@@ -215,6 +216,7 @@ export default function Search() {
                         <Text style={styles.step}>{s}</Text>
                       </View>
                     ))}
+                    <CookedButton usesInventory={r.uses_inventory} />
                   </View>
                 )}
               </Pressable>

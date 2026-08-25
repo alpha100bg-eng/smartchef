@@ -30,6 +30,13 @@ def test_layer1_delegates_variants_to_layer2():
     assert layer1_covered("oignon nouveau", inv) is False
 
 
+def test_plural_endings():
+    # "eaux" must win over "aux", otherwise gâteaux -> "gateal"
+    assert normalize("gâteaux") == "gateau"
+    assert normalize("chevaux") == "cheval"
+    assert normalize("journaux") == "journal"
+
+
 def test_short_roots_not_over_stripped():
     # prudent: don't collapse very short words
     assert normalize("pois") == "pois"  # invariable

@@ -25,10 +25,12 @@ def _singularize_word(w: str) -> str:
         return w
     # Prudent: only touch clearly plural forms, keep a >=4-char stem to avoid
     # collapsing short roots into collisions.
+    # "eaux" must be tested before "aux", otherwise "gateaux" matches the
+    # -aux/-al rule and becomes "gateal".
+    if w.endswith("eaux") and len(w) > 5:
+        return w[:-1]  # gâteaux -> gâteau
     if w.endswith("aux") and len(w) > 4:
         return w[:-3] + "al"  # chevaux -> cheval, journaux -> journal
-    if w.endswith(("eaux",)) and len(w) > 5:
-        return w[:-1]  # gâteaux -> gâteau
     if w.endswith(("s", "x")) and len(w) > 4:
         return w[:-1]
     return w

@@ -16,6 +16,7 @@ import {
   type MealPlanEntry,
 } from "@/lib/mealPlan";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
+import { CookedButton } from "@/components/CookedButton";
 
 const SLOT_LABELS: Record<string, string> = {
   breakfast: "Petit-déj",
@@ -151,6 +152,11 @@ export default function MealPlan() {
                                 <Text style={styles.step}>{e.recipe.instructions}</Text>
                               </>
                             ) : null}
+                            <CookedButton
+                              usesInventory={(e.recipe.ingredients ?? []).map(
+                                (i) => i.name
+                              )}
+                            />
                           </View>
                         )}
                       </View>
