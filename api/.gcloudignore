@@ -1,0 +1,19 @@
+# Ce que `gcloud run deploy --source .` n'envoie PAS à Cloud Build.
+#
+# Sans ce fichier, gcloud cherche un .gitignore dans ce dossier ; il n'y en a
+# pas (le seul est à la racine du dépôt), donc TOUT serait téléversé — dont
+# .env et .venv/. Le .dockerignore ne protège que l'image, pas l'archive
+# déposée dans le bucket de staging.
+
+# Secrets — ne doivent jamais quitter la machine.
+.env
+.env.*
+!.env.example
+*.local.txt
+
+# Inutile au build : l'image réinstalle depuis requirements.txt.
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+start-api.cmd
