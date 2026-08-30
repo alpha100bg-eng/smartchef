@@ -41,6 +41,28 @@ jobs:
           node-version: "20.12"
       - run: npm ci --ignore-scripts
 
+      # Expo remplace process.env.EXPO_PUBLIC_* à la construction. Si une
+      # valeur manque, elle devient une chaîne vide : le build RÉUSSIT et
+      # publie une app incapable de joindre Supabase. Échouer ici est la
+      # seule façon de voir le problème autrement qu'en production.
+      - name: Vérifier que la configuration est présente
+        env:
+          URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+          KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          API: ${{ vars.EXPO_PUBLIC_API_URL }}
+        run: |
+          fail=0
+          for n in URL KEY API; do
+            v="${!n}"
+            if [ -z "$v" ]; then
+              echo "::error::$n est vide — à définir dans Settings > Secrets and variables > Actions"
+              fail=1
+            else
+              echo "$n : OK (${#v} caractères)"
+            fi
+          done
+          exit $fail
+
       - name: Construire l'app web
         run: npx expo export --platform web
         env:
