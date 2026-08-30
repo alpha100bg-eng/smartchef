@@ -57,15 +57,25 @@ jobs:
           API: ${{ secrets.EXPO_PUBLIC_API_URL }}
         run: |
           fail=0
-          for n in URL KEY API; do
-            v="${!n}"
-            if [ -z "$v" ]; then
-              echo "::error::$n est vide — à définir dans Settings > Secrets and variables > Actions"
+          check() {  # nom, valeur, motif attendu, description lisible
+            if [ -z "$2" ]; then
+              echo "::error::$1 est vide — à définir dans Settings > Secrets and variables > Actions (onglet Secrets)"
+              fail=1
+            elif ! printf '%s' "$2" | grep -qE "$3"; then
+              echo "::error::$1 a une valeur invalide (${#2} caractères) — attendu : $4"
               fail=1
             else
-              echo "$n : OK (${#v} caractères)"
+              echo "$1 : OK (${#2} caractères)"
             fi
-          done
+          }
+          # Pas de barre oblique finale : supabase-js la concatène et produit
+          # « Invalid path specified in request URL ».
+          check URL "$URL" '^https://[a-z0-9]+\.supabase\.co$' \
+                "https://<projet>.supabase.co, sans / final"
+          check KEY "$KEY" '^(sb_publishable_|eyJ)' \
+                "la clé publishable (sb_publishable_…), pas la clé secrète"
+          check API "$API" '^https://[^/]+' \
+                "l'URL Cloud Run en https"
           exit $fail
 
       - name: Construire l'app web
