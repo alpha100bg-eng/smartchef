@@ -19,8 +19,11 @@ jobs:
     steps:
       - name: Alertes de péremption
         run: |
+          # Content-Length explicite : un POST sans corps n'en envoie aucun,
+          # et Cloud Run répond alors 411 Length Required.
           code=$(curl -sS -o response.json -w "%{http_code}" \
             -X POST "${API_URL}/jobs/expiry-check" \
+            -H "Content-Length: 0" \
             -H "Authorization: Bearer ${CRON_SECRET}")
           echo "HTTP $code"
           cat response.json
@@ -37,6 +40,7 @@ jobs:
         run: |
           code=$(curl -sS -o response.json -w "%{http_code}" \
             -X POST "${API_URL}/jobs/photo-cleanup" \
+            -H "Content-Length: 0" \
             -H "Authorization: Bearer ${CRON_SECRET}")
           echo "HTTP $code"
           cat response.json
