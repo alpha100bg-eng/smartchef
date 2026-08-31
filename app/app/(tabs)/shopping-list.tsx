@@ -13,6 +13,7 @@ import {
   latestMealPlanId,
   buildFromPlan,
   setItemChecked,
+  addBoughtToFridge,
   type ShoppingItem,
   type ShoppingListView,
 } from "@/lib/shopping";
@@ -32,6 +33,8 @@ export default function ShoppingList() {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [inFridge, setInFridge] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [storing, setStoring] = useState(false);
+  const [stored, setStored] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function generate() {
@@ -70,6 +73,22 @@ export default function ShoppingList() {
         prev.map((it, idx) => (idx === i ? { ...it, checked: !next } : it))
       );
       setError("La coche n'a pas pu être enregistrée.");
+    }
+  }
+
+  async function storeBought() {
+    setError(null);
+    setStoring(true);
+    try {
+      const n = await addBoughtToFridge(items);
+      setStored(n);
+      // Les articles rangés quittent la liste : la garder telle quelle
+      // inviterait à les ranger deux fois.
+      setItems((prev) => prev.filter((i) => !i.checked));
+    } catch (e: any) {
+      setError(e.message ?? "Impossible de ranger les courses");
+    } finally {
+      setStoring(false);
     }
   }
 
@@ -190,6 +209,32 @@ export default function ShoppingList() {
         </ScrollView>
       )}
 
+      {stored !== null && (
+        <View style={styles.doneBanner}>
+          <Ionicons name="checkmark-circle" size={17} color={colors.primaryDark} />
+          <Text style={styles.doneBannerText}>
+            {stored} article{stored > 1 ? "s" : ""} ajouté{stored > 1 ? "s" : ""} à ton
+            frigo
+          </Text>
+        </View>
+      )}
+
+      {done > 0 && (
+        <Pressable
+          style={styles.secondaryBtn}
+          onPress={storeBought}
+          disabled={storing}
+          accessibilityLabel={`Ranger ${done} article${done > 1 ? "s" : ""} dans le frigo`}
+        >
+          <Ionicons name="file-tray-full-outline" size={18} color={colors.primaryDark} />
+          <Text style={styles.secondaryBtnText}>
+            {storing
+              ? "Rangement…"
+              : `J'ai fait mes courses (${done} article${done > 1 ? "s" : ""})`}
+          </Text>
+        </Pressable>
+      )}
+
       <Pressable style={styles.primaryBtn} onPress={generate} disabled={loading}>
         <Ionicons name="cart" size={18} color={colors.onPrimary} />
         <Text style={styles.primaryBtnText}>
@@ -290,4 +335,34 @@ const styles = StyleSheet.create({
     ...shadow.button,
   },
   primaryBtnText: { color: colors.onPrimary, fontWeight: "700", fontSize: font.body },
+
+  secondaryBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.pill,
+    paddingVertical: 15,
+  },
+  secondaryBtnText: {
+    color: colors.primaryDark,
+    fontWeight: "700",
+    fontSize: font.body,
+  },
+
+  doneBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  doneBannerText: {
+    color: colors.primaryDark,
+    fontWeight: "600",
+    fontSize: font.small,
+  },
 });
