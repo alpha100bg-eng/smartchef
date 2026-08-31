@@ -37,4 +37,6 @@ jobs:
       # voir README) ; ils ne sont pas nécessaires pour typecheck et tests.
       - run: npm ci --ignore-scripts
       - run: npx tsc --noEmit
-      - run: npx jest --ci
+      # --runInBand (via npm test) : en parallèle, les suites Expo se disputent
+      # le CPU et dépassent leur délai sans qu'aucune assertion n'échoue.
+      - run: npm test -- --ci

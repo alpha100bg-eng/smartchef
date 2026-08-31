@@ -4,6 +4,7 @@ import { decode } from "base64-arraybuffer";
 
 import { supabase } from "./supabase";
 import { apiFetch } from "./api";
+import { notifyInventoryChanged } from "./urgent-count";
 
 const BUCKET = "fridge-photos";
 const MAX_EDGE = 1568; // downscale target — balances label legibility vs cost
@@ -111,6 +112,7 @@ export async function saveItems(items: ReviewItem[]): Promise<void> {
   if (rows.length === 0) return;
   const { error } = await supabase.from("inventory_items").insert(rows);
   if (error) throw error;
+  notifyInventoryChanged();
 }
 
 /** RGPD: remove the photo from Storage once it's no longer needed. */
@@ -124,6 +126,7 @@ export async function deletePhoto(storagePath: string): Promise<void> {
 export async function deleteItem(id: string): Promise<void> {
   const { error } = await supabase.from("inventory_items").delete().eq("id", id);
   if (error) throw error;
+  notifyInventoryChanged();
 }
 
 /** Adjust a single item (quantity correction, expiry date fix). */
@@ -133,6 +136,7 @@ export async function updateItem(
 ): Promise<void> {
   const { error } = await supabase.from("inventory_items").update(patch).eq("id", id);
   if (error) throw error;
+  notifyInventoryChanged();
 }
 
 export function toReviewItem(d: DetectedItem): ReviewItem {

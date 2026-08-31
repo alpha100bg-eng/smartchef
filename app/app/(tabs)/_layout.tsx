@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
+import { useUrgentCount } from "@/lib/urgent-count";
 import { colors } from "@/lib/theme";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
@@ -12,9 +13,17 @@ function icon(name: IconName, outline: IconName) {
 }
 
 export default function TabsLayout() {
+  const urgent = useUrgentCount();
+
   return (
     <Tabs
       screenOptions={{
+        tabBarBadgeStyle: {
+          backgroundColor: colors.danger,
+          color: colors.onPrimary,
+          fontSize: 10,
+          fontWeight: "700",
+        },
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
@@ -30,7 +39,16 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="inventory"
-        options={{ title: "Frigo", tabBarIcon: icon("leaf", "leaf-outline") }}
+        options={{
+          title: "Frigo",
+          tabBarIcon: icon("leaf", "leaf-outline"),
+          // undefined masque la pastille ; 0 afficherait un rond vide.
+          tabBarBadge: urgent > 0 ? urgent : undefined,
+          tabBarAccessibilityLabel:
+            urgent > 0
+              ? `Frigo, ${urgent} aliment${urgent > 1 ? "s" : ""} à consommer rapidement`
+              : "Frigo",
+        }}
       />
       <Tabs.Screen
         name="search"

@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { sameFood } from "./normalize";
+import { notifyInventoryChanged } from "./urgent-count";
 
 /**
  * "I cooked this" — closes the loop. Without it the inventory only ever grows
@@ -47,4 +48,5 @@ export async function removeFinished(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   const { error } = await supabase.from("inventory_items").delete().in("id", ids);
   if (error) throw error;
+  notifyInventoryChanged();
 }

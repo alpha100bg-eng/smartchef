@@ -4,6 +4,7 @@ Prototype model: Claude Sonnet 5, structured JSON output, prompt caching on the
 system prompt + schema. Evaluate Haiku 4.5 on the same photos and switch down if
 quality holds (spec §7.1). Never Opus.
 """
+from datetime import date, timedelta
 from functools import lru_cache
 
 from anthropic import Anthropic
@@ -30,8 +31,46 @@ SYSTEM_PROMPT = (
     "`confidence` entre 0 et 1 : élevé si tu es sûr, bas si l'item est flou, "
     "partiellement caché, ou si la quantité/date est incertaine. N'invente pas "
     "d'aliments non visibles. La quantité et les dates sont peu fiables — dans "
-    "le doute, baisse le confidence plutôt que de deviner."
+    "le doute, baisse le confidence plutôt que de deviner.\n\n"
+    "Renseigne aussi `shelf_life_days` : la durée de conservation typique de "
+    "cet aliment AU RÉFRIGÉRATEUR, en jours, à compter d'aujourd'hui. Une date "
+    "imprimée est rarement lisible sur une photo de frigo ; cette estimation "
+    "est donc la seule base des alertes de péremption. Estime toujours, sauf "
+    "pour un aliment qui ne se périme pas en pratique (condiments, moutarde, "
+    "sauces industrielles fermées) — dans ce cas, null.\n"
+    "Repères : herbes fraîches et salade lavée 2-3 ; viande et poisson crus, "
+    "plats préparés entamés 2-3 ; lait entamé, légumes-feuilles 5-7 ; yaourts, "
+    "fromage frais 10-14 ; légumes racines, fromage à pâte dure 20-30 ; œufs 21. "
+    "Si l'emballage est visiblement déjà ouvert ou entamé, raccourcis. Vise la "
+    "prudence : mieux vaut prévenir un jour trop tôt que trop tard."
 )
+
+
+# Garde-fous sur l'estimation : un modèle qui renvoie 0 ou 3650 jours produirait
+# soit une alerte immédiate, soit un aliment jamais surveillé.
+MIN_SHELF_LIFE_DAYS = 1
+MAX_SHELF_LIFE_DAYS = 365
+
+
+def fill_expiry_dates(result: VisionResult, today: date | None = None) -> VisionResult:
+    """Dérive `expiry_date` de `shelf_life_days` quand aucune date n'est lisible.
+
+    Sans cela, `expiry_date` est null pour la quasi-totalité des items — une date
+    imprimée n'est presque jamais déchiffrable sur une photo de frigo — et les
+    alertes de péremption n'ont rien à surveiller.
+
+    Une date lue sur l'emballage l'emporte toujours sur l'estimation.
+    """
+    today = today or date.today()
+    for item in result.items:
+        if item.expiry_date:
+            continue
+        days = item.shelf_life_days
+        if days is None:
+            continue  # aliment sans péremption utile (condiments, sauces fermées)
+        days = max(MIN_SHELF_LIFE_DAYS, min(MAX_SHELF_LIFE_DAYS, days))
+        item.expiry_date = (today + timedelta(days=days)).isoformat()
+    return result
 
 
 @lru_cache
@@ -78,4 +117,4 @@ def detect_from_storage_path(storage_path: str) -> VisionResult:
         ],
         output_format=VisionResult,
     )
-    return response.parsed_output
+    return fill_expiry_dates(response.parsed_output)

@@ -21,9 +21,16 @@ import {
   type ReviewItem,
 } from "@/lib/inventory";
 import { registerForExpiryAlerts } from "@/lib/notifications";
+import { countUrgent, expiryLabel, sortByUrgency, urgency } from "@/lib/expiry";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
-type Row = { id: string; name: string; quantity: number | null; unit: string | null };
+type Row = {
+  id: string;
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+  expiry_date: string | null;
+};
 
 const LOW_CONFIDENCE = 0.6;
 const UNITS = ["pièce", "g", "kg", "L", "ml"];
@@ -49,9 +56,11 @@ export default function Inventory() {
   async function loadInventory() {
     const { data } = await supabase
       .from("inventory_items")
-      .select("id, name, quantity, unit")
+      .select("id, name, quantity, unit, expiry_date")
       .order("created_at", { ascending: false });
-    setItems(data ?? []);
+    // Ce qui périme d'abord : c'est la seule information qui appelle une
+    // décision aujourd'hui.
+    setItems(sortByUrgency(data ?? []));
   }
 
   useEffect(() => {
@@ -187,6 +196,9 @@ export default function Inventory() {
                 value={row.expiry_date}
                 onChangeText={(t) => updateRow(i, { expiry_date: t })}
               />
+              <Text style={styles.hint}>
+                Estimation de conservation — corrige si tu connais la vraie date.
+              </Text>
               <TextInput
                 style={styles.input}
                 placeholder="Marque (optionnel)"
@@ -224,6 +236,8 @@ export default function Inventory() {
   }
 
   // ── Idle / inventory list ────────────────────────────────────────
+  const urgentCount = countUrgent(items);
+
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
@@ -268,32 +282,72 @@ export default function Inventory() {
             </View>
           ) : (
             <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-              {items.map((it) => (
-                <View key={it.id} style={styles.itemCard}>
-                  <View style={styles.itemBadge}>
-                    <Text style={styles.itemBadgeText}>
-                      {it.name.trim().charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <Text style={styles.itemName} numberOfLines={1}>
-                    {it.name}
+              {urgentCount > 0 && (
+                <View style={styles.banner}>
+                  <Ionicons name="time-outline" size={17} color={colors.warn} />
+                  <Text style={styles.bannerText}>
+                    {urgentCount} aliment{urgentCount > 1 ? "s" : ""} à consommer
+                    rapidement
                   </Text>
-                  <Text style={styles.itemQty}>
-                    {[it.quantity, it.unit].filter(Boolean).join(" ")}
-                  </Text>
-                  <Pressable
-                    onPress={() => removeItem(it.id)}
-                    hitSlop={10}
-                    accessibilityLabel={`Retirer ${it.name} de l'inventaire`}
-                  >
-                    <Ionicons
-                      name="close-circle-outline"
-                      size={21}
-                      color={colors.textMuted}
-                    />
-                  </Pressable>
                 </View>
-              ))}
+              )}
+              {items.map((it) => {
+                const level = urgency(it.expiry_date);
+                const label = expiryLabel(it.expiry_date);
+                const late = level === "expired" || level === "today";
+                return (
+                  <View
+                    key={it.id}
+                    style={[
+                      styles.itemCard,
+                      late && styles.itemCardLate,
+                      level === "soon" && styles.itemCardSoon,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.itemBadge,
+                        late && styles.itemBadgeLate,
+                        level === "soon" && styles.itemBadgeSoon,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.itemBadgeText,
+                          late && styles.itemBadgeTextLate,
+                          level === "soon" && styles.itemBadgeTextSoon,
+                        ]}
+                      >
+                        {it.name.trim().charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={styles.itemMain}>
+                      <Text style={styles.itemName} numberOfLines={1}>
+                        {it.name}
+                      </Text>
+                      {label && (
+                        <Text style={late ? styles.expiryLate : styles.expirySoon}>
+                          {label}
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={styles.itemQty}>
+                      {[it.quantity, it.unit].filter(Boolean).join(" ")}
+                    </Text>
+                    <Pressable
+                      onPress={() => removeItem(it.id)}
+                      hitSlop={10}
+                      accessibilityLabel={`Retirer ${it.name} de l'inventaire`}
+                    >
+                      <Ionicons
+                        name="close-circle-outline"
+                        size={21}
+                        color={colors.textMuted}
+                      />
+                    </Pressable>
+                  </View>
+                );
+              })}
               <View style={{ height: spacing.sm }} />
             </ScrollView>
           )}
@@ -374,8 +428,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   itemBadgeText: { color: colors.primaryDark, fontWeight: "700", fontSize: font.body },
-  itemName: { flex: 1, fontSize: font.body, color: colors.text, fontWeight: "500" },
+  itemMain: { flex: 1, gap: 1 },
+  itemName: { fontSize: font.body, color: colors.text, fontWeight: "500" },
   itemQty: { fontSize: font.small, color: colors.textSecondary },
+
+  // Péremption : la couleur porte l'urgence, le texte la précise.
+  itemCardLate: { backgroundColor: "#FBEDE9" },
+  itemCardSoon: { backgroundColor: colors.warnSoft },
+  itemBadgeLate: { backgroundColor: "#F4D8D1" },
+  itemBadgeSoon: { backgroundColor: "#F7E6BE" },
+  itemBadgeTextLate: { color: colors.danger },
+  itemBadgeTextSoon: { color: colors.warn },
+  expiryLate: { fontSize: font.tiny, color: colors.danger, fontWeight: "600" },
+  expirySoon: { fontSize: font.tiny, color: colors.warn, fontWeight: "600" },
+
+  banner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.warnSoft,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  bannerText: { color: colors.warn, fontWeight: "600", fontSize: font.small },
 
   card: {
     backgroundColor: colors.card,
@@ -409,6 +486,7 @@ const styles = StyleSheet.create({
   unitText: { color: colors.textSecondary, fontSize: font.tiny },
   unitTextOn: { color: colors.onPrimary, fontSize: font.tiny, fontWeight: "600" },
 
+  hint: { fontSize: font.tiny, color: colors.textMuted, marginTop: -4 },
   removeRow: { flexDirection: "row", alignItems: "center", gap: 5, paddingTop: 2 },
   remove: { color: colors.danger, fontSize: font.small },
 
