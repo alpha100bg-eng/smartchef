@@ -17,6 +17,12 @@ import {
   type Recipe,
   type RecipeSummary,
 } from "@/lib/search";
+import {
+  saveRecipe,
+  listSavedRecipes,
+  deleteSavedRecipe,
+  type SavedRecipe,
+} from "@/lib/saved-recipes";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { CookedButton } from "@/components/CookedButton";
 
@@ -34,6 +40,51 @@ export default function Search() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const autoRan = useRef<string | null>(null);
+
+  // Recettes gardées — affichées à l'accueil, avant toute recherche.
+  const [saved, setSaved] = useState<SavedRecipe[]>([]);
+  const [savedIds, setSavedIds] = useState<Record<number, string>>({});
+  const [savingIndex, setSavingIndex] = useState<number | null>(null);
+  const [openSaved, setOpenSaved] = useState<string | null>(null);
+
+  async function loadSaved() {
+    try {
+      setSaved(await listSavedRecipes());
+    } catch {
+      // Une lecture ratée ne doit pas empêcher de chercher une recette.
+    }
+  }
+
+  useEffect(() => {
+    loadSaved();
+  }, []);
+
+  async function keep(index: number, full: Recipe) {
+    setSavingIndex(index);
+    try {
+      const id = await saveRecipe(full);
+      setSavedIds((prev) => ({ ...prev, [index]: id }));
+      await loadSaved();
+    } catch (e: any) {
+      setError(e.message ?? "Impossible de garder cette recette");
+    } finally {
+      setSavingIndex(null);
+    }
+  }
+
+  async function forget(id: string) {
+    const previous = saved;
+    setSaved((prev) => prev.filter((r) => r.id !== id));
+    try {
+      await deleteSavedRecipe(id);
+      setSavedIds((prev) =>
+        Object.fromEntries(Object.entries(prev).filter(([, v]) => v !== id))
+      );
+    } catch {
+      setSaved(previous);
+      setError("Suppression impossible");
+    }
+  }
 
   async function run(term?: string) {
     const text = (term ?? query).trim();
@@ -132,15 +183,94 @@ export default function Search() {
           <Text style={styles.muted}>Recherche de recettes…</Text>
         </View>
       ) : recipes === null ? (
-        <View style={styles.center}>
-          <View style={styles.emptyIcon}>
-            <Ionicons name="restaurant-outline" size={32} color={colors.primary} />
+        saved.length === 0 ? (
+          <View style={styles.center}>
+            <View style={styles.emptyIcon}>
+              <Ionicons name="restaurant-outline" size={32} color={colors.primary} />
+            </View>
+            <Text style={styles.emptyTitle}>Dis-moi ton envie</Text>
+            <Text style={styles.emptyBody}>
+              Je propose des recettes avec ce que tu as déjà.
+            </Text>
           </View>
-          <Text style={styles.emptyTitle}>Dis-moi ton envie</Text>
-          <Text style={styles.emptyBody}>
-            Je propose des recettes avec ce que tu as déjà.
-          </Text>
-        </View>
+        ) : (
+          // Rouvrir une recette gardée ne coûte ni attente ni appel IA.
+          <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
+            <Text style={styles.savedHead}>Tes recettes gardées</Text>
+            {saved.map((r) => {
+              const open = openSaved === r.id;
+              return (
+                <Pressable
+                  key={r.id}
+                  style={styles.card}
+                  onPress={() => setOpenSaved(open ? null : r.id)}
+                >
+                  <View style={styles.cardHead}>
+                    <Ionicons name="bookmark" size={15} color={colors.primaryDark} />
+                    <Text style={styles.recipeTitle}>{r.title}</Text>
+                    <Ionicons
+                      name={open ? "chevron-up" : "chevron-down"}
+                      size={18}
+                      color={colors.textMuted}
+                    />
+                  </View>
+
+                  <View style={styles.stats}>
+                    {r.prep_time_min != null && (
+                      <Stat icon="time-outline" value={`${r.prep_time_min}`} label="min" />
+                    )}
+                    {r.servings != null && (
+                      <Stat icon="people-outline" value={`${r.servings}`} label="pers." />
+                    )}
+                    <Stat
+                      icon="basket-outline"
+                      value={`${r.ingredients.length}`}
+                      label="ingrédients"
+                    />
+                  </View>
+
+                  {open && (
+                    <View style={styles.detail}>
+                      <Text style={styles.sectionTitle}>Ingrédients</Text>
+                      {r.ingredients.map((ing, j) => (
+                        <View key={j} style={styles.ingRow}>
+                          <Text style={styles.ingName}>{ing.name}</Text>
+                          <Text style={styles.ingQty}>
+                            {[ing.quantity, ing.unit].filter(Boolean).join(" ")}
+                          </Text>
+                        </View>
+                      ))}
+                      <Text style={styles.sectionTitle}>Préparation</Text>
+                      {r.steps.map((s, j) => (
+                        <View key={j} style={styles.stepRow}>
+                          <View style={styles.stepNum}>
+                            <Text style={styles.stepNumText}>{j + 1}</Text>
+                          </View>
+                          <Text style={styles.step}>{s}</Text>
+                        </View>
+                      ))}
+                      {/* Les ingrédients servent de base au rapprochement avec
+                          le frigo : figer uses_inventory à l'enregistrement le
+                          rendrait faux dès la première course. */}
+                      <CookedButton
+                        usesInventory={r.ingredients.map((i) => i.name)}
+                      />
+                      <Pressable
+                        style={styles.forgetRow}
+                        onPress={() => forget(r.id)}
+                        accessibilityLabel={`Retirer ${r.title} des recettes gardées`}
+                      >
+                        <Ionicons name="trash-outline" size={14} color={colors.danger} />
+                        <Text style={styles.forget}>Ne plus garder</Text>
+                      </Pressable>
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
+            <View style={{ height: spacing.md }} />
+          </ScrollView>
+        )
       ) : recipes.length === 0 ? (
         <View style={styles.center}>
           <Text style={styles.emptyTitle}>Aucune recette trouvée</Text>
@@ -216,6 +346,29 @@ export default function Search() {
                         <Text style={styles.step}>{s}</Text>
                       </View>
                     ))}
+                    <Pressable
+                      style={styles.keepBtn}
+                      onPress={() => keep(i, full)}
+                      disabled={savingIndex === i || savedIds[i] != null}
+                      accessibilityLabel={
+                        savedIds[i] != null
+                          ? `${r.title} est gardée`
+                          : `Garder ${r.title}`
+                      }
+                    >
+                      <Ionicons
+                        name={savedIds[i] != null ? "bookmark" : "bookmark-outline"}
+                        size={16}
+                        color={colors.primaryDark}
+                      />
+                      <Text style={styles.keepBtnText}>
+                        {savedIds[i] != null
+                          ? "Gardée"
+                          : savingIndex === i
+                            ? "…"
+                            : "Garder cette recette"}
+                      </Text>
+                    </Pressable>
                     <CookedButton usesInventory={r.uses_inventory} />
                   </View>
                 )}
@@ -363,4 +516,31 @@ const styles = StyleSheet.create({
   },
   stepNumText: { color: colors.primaryDark, fontSize: font.tiny, fontWeight: "700" },
   step: { flex: 1, color: colors.text, fontSize: font.small, lineHeight: 19 },
+
+  keepBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.pill,
+    paddingVertical: 11,
+    marginTop: spacing.sm,
+  },
+  keepBtnText: { color: colors.primaryDark, fontWeight: "700", fontSize: font.small },
+
+  savedHead: {
+    fontSize: font.small,
+    fontWeight: "700",
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  forgetRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    paddingTop: spacing.sm,
+  },
+  forget: { color: colors.danger, fontSize: font.small },
 });
