@@ -52,9 +52,9 @@ def _fake_view():
     return MealPlanView(
         id="plan-1", week_start="2026-08-03", budget_target=50, estimated_cost=44.5,
         entries=[MealPlanEntryView(
-            day="2026-08-03", slot="dinner",
+            day="2026-08-03", slot="dinner", recipe_id="rec-1",
             recipe=PlanRecipe(title="Riz aux légumes", prep_time_min=20, servings=2,
-                              macros={"kcal": 500}, ingredients=[], instructions="Cuire."),
+                              macros={"kcal": 500}, ingredients=[], instructions=""),
         )],
     )
 
@@ -80,3 +80,42 @@ def test_get_plan_not_found(ec_keys):
 def test_generate_requires_auth():
     resp = client.post("/meal-plan/generate", json={"week_start": "2026-08-03"})
     assert resp.status_code == 403
+
+
+# ── Préparation rédigée à la demande ────────────────────────────────
+# Le plan ne génère plus les préparations d'un bloc : elles pesaient ~74 % des
+# tokens et tronquaient le JSON par intermittence.
+
+def test_instructions_returns_the_text(ec_keys):
+    with patch("app.services.meal_plan.recipe_instructions", return_value="1. Cuire le riz."):
+        resp = client.post("/meal-plan/instructions",
+                           headers={"Authorization": f"Bearer {token(ec_keys)}"},
+                           json={"recipe_id": "rec-1"})
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["instructions"] == "1. Cuire le riz."
+
+
+def test_instructions_of_another_account_are_not_served(ec_keys):
+    # La clé de service contourne la RLS : la vérification d'appartenance dans
+    # le service est la seule barrière entre deux comptes.
+    with patch("app.services.meal_plan.recipe_instructions", side_effect=LookupError()):
+        resp = client.post("/meal-plan/instructions",
+                           headers={"Authorization": f"Bearer {token(ec_keys)}"},
+                           json={"recipe_id": "recette-d-un-autre"})
+    assert resp.status_code == 404
+
+
+def test_instructions_requires_auth():
+    resp = client.post("/meal-plan/instructions", json={"recipe_id": "rec-1"})
+    assert resp.status_code == 403
+
+
+def test_instructions_spend_the_search_quota_not_the_plan_one(ec_keys):
+    # Ouvrir une recette ne doit pas consommer le quota de génération de
+    # semaine (2/jour) : deux lectures épuiseraient la fonctionnalité.
+    with patch("app.services.quota.consume") as consume, \
+         patch("app.services.meal_plan.recipe_instructions", return_value="1. Cuire."):
+        client.post("/meal-plan/instructions",
+                    headers={"Authorization": f"Bearer {token(ec_keys)}"},
+                    json={"recipe_id": "rec-1"})
+    assert consume.call_args[0][1] == "search"

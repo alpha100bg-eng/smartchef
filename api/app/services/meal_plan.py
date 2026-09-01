@@ -17,6 +17,7 @@ from app.models.meal_plan import (
     MealPlanGeneration,
     MealPlanView,
     PlanRecipe,
+    RecipeSteps,
     SLOTS,
 )
 from app.services.search import load_context
@@ -33,13 +34,26 @@ SYSTEM_PROMPT = (
     "réutiliser une recette sur plusieurs créneaux (ex. petit-déjeuner) — "
     "renvoie une liste `recipes` dédupliquée et un `schedule` qui y fait "
     "référence par `recipe_index`, `day_offset` (0-6) et `slot`. Donne des "
-    "macros estimées par recette. "
-    "Qualité des recettes : des instructions concrètes et cuisinables, avec "
-    "quantités, températures, durées et indices de cuisson — pas de « cuire le "
-    "tout ». Vise 4 à 7 étapes utiles par recette. Réutilise les recettes du "
-    "petit-déjeuner et des collations d'un jour sur l'autre pour garder une "
-    "quinzaine de recettes distinctes au maximum, ce qui laisse la place de "
-    "détailler chacune correctement."
+    "macros estimées par recette. Réutilise les recettes du petit-déjeuner et "
+    "des collations d'un jour sur l'autre pour rester sous une quinzaine de "
+    "recettes distinctes.\n\n"
+    "IMPORTANT : n'écris PAS la préparation. Pour chaque recette, uniquement le "
+    "titre, le temps, les portions, les macros et la liste d'ingrédients avec "
+    "des quantités précises — ces ingrédients servent à bâtir la liste de "
+    "courses de toute la semaine, y compris pour les recettes que "
+    "l'utilisateur n'ouvrira pas."
+)
+
+# Rédigée à la demande, une recette à la fois. Même exigence de qualité que la
+# fiche recette de la recherche : c'est ce que l'utilisateur lit en cuisinant.
+STEPS_PROMPT = (
+    "Tu es un chef qui rédige la préparation d'une recette. On te donne son "
+    "titre, ses ingrédients et le contexte de l'utilisateur (régime, "
+    "allergies). Écris 4 à 7 étapes concrètes et cuisinables, avec "
+    "températures, durées, textures et indices sensoriels (« jusqu'à ce que "
+    "les oignons soient translucides »). Jamais d'étape vague du type "
+    "« cuire » ou « mélanger le tout ». Respecte STRICTEMENT le régime et les "
+    "ALLERGIES."
 )
 
 
@@ -58,7 +72,9 @@ def _generate(profile_id: str, week_start: str, budget: float | None) -> MealPla
     )
     resp = _client().messages.parse(
         model=MEAL_PLAN_MODEL,
-        max_tokens=16000,
+        # Sans les préparations, la sortie mesurée tombe à ~3 500 tokens ;
+        # 8 000 laisse plus du double de marge, là où 16 000 était atteint.
+        max_tokens=8000,
         system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user_content}],
         output_format=MealPlanGeneration,
@@ -77,7 +93,8 @@ def _persist(profile_id: str, week_start: str, budget: float | None, gen: MealPl
             row = admin.table("recipes").insert({
                 "profile_id": profile_id,
                 "title": r.title,
-                "instructions": r.instructions,
+                # Rédigée à la première ouverture, puis conservée.
+                "instructions": None,
                 "prep_time_min": r.prep_time_min,
                 "servings": r.servings,
                 "macros": r.macros.model_dump(),
@@ -163,6 +180,7 @@ def _view(profile_id: str, plan_id: str) -> MealPlanView:
         views.append(MealPlanEntryView(
             day=e["day"],
             slot=e["slot"],
+            recipe_id=e["recipe_id"],
             recipe=PlanRecipe(
                 title=rd["title"],
                 prep_time_min=rd.get("prep_time_min"),
@@ -179,6 +197,56 @@ def _view(profile_id: str, plan_id: str) -> MealPlanView:
         estimated_cost=plan.data.get("estimated_cost"),
         entries=views,
     )
+
+
+def recipe_instructions(profile_id: str, recipe_id: str) -> str:
+    """Rédige la préparation d'une recette du plan, à la première ouverture.
+
+    Le résultat est écrit en base : rouvrir la même recette ne coûte plus rien.
+    Renvoie directement le texte déjà stocké s'il existe.
+    """
+    admin = get_supabase_admin()
+    row = (
+        admin.table("recipes")
+        .select("id, profile_id, title, instructions")
+        .eq("id", recipe_id)
+        .single()
+        .execute()
+    )
+    # La clé de service contourne la RLS : vérifier l'appartenance ici est la
+    # seule barrière entre deux comptes.
+    if not row.data or row.data["profile_id"] != profile_id:
+        raise LookupError("recipe not found")
+    if row.data.get("instructions"):
+        return row.data["instructions"]
+
+    ings = (
+        admin.table("recipe_ingredients")
+        .select("name, quantity, unit")
+        .eq("recipe_id", recipe_id)
+        .execute()
+    )
+    context = load_context(profile_id)
+    payload = {
+        "titre": row.data["title"],
+        "ingredients": ings.data or [],
+        "regime": context["profile"].get("diet_type"),
+        "allergies": context["allergies"],
+    }
+    resp = _client().messages.parse(
+        model=MEAL_PLAN_MODEL,
+        max_tokens=1500,
+        system=[{"type": "text", "text": STEPS_PROMPT, "cache_control": {"type": "ephemeral"}}],
+        messages=[{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
+        output_format=RecipeSteps,
+    )
+    steps = [s.strip() for s in resp.parsed_output.steps if s.strip()]
+    if not steps:
+        raise RuntimeError("empty instructions returned")
+
+    text = "\n".join(f"{i}. {s}" for i, s in enumerate(steps, 1))
+    admin.table("recipes").update({"instructions": text}).eq("id", recipe_id).execute()
+    return text
 
 
 def generate_meal_plan(profile_id: str, week_start: str, budget: float | None) -> MealPlanView:

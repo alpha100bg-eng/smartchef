@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import {
   generateMealPlan,
+  fetchInstructions,
   currentWeekStart,
   type MealPlanView,
   type MealPlanEntry,
@@ -42,17 +43,45 @@ export default function MealPlan() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openKey, setOpenKey] = useState<string | null>(null);
+  // Préparations rédigées à la demande, indexées par recipe_id. Une recette
+  // revient plusieurs fois dans la semaine : la mémoriser ici évite de la
+  // redemander pour chaque créneau.
+  const [steps, setSteps] = useState<Record<string, string>>({});
+  const [stepsLoading, setStepsLoading] = useState<string | null>(null);
 
   async function generate() {
     setError(null);
     setLoading(true);
     setOpenKey(null);
+    setSteps({});
     try {
       setPlan(await generateMealPlan(currentWeekStart()));
     } catch (e: any) {
       setError(e.message ?? "Échec de la génération");
     } finally {
       setLoading(false);
+    }
+  }
+
+  /** Ouvre un créneau et charge sa préparation si on ne l'a pas déjà. */
+  async function toggleEntry(key: string, entry: MealPlanEntry) {
+    if (openKey === key) {
+      setOpenKey(null);
+      return;
+    }
+    setOpenKey(key);
+
+    const known = entry.recipe.instructions || steps[entry.recipe_id];
+    if (known || !entry.recipe_id) return;
+
+    setStepsLoading(entry.recipe_id);
+    try {
+      const text = await fetchInstructions(entry.recipe_id);
+      setSteps((prev) => ({ ...prev, [entry.recipe_id]: text }));
+    } catch (e: any) {
+      setError(e.message ?? "Impossible de charger la préparation");
+    } finally {
+      setStepsLoading(null);
     }
   }
 
@@ -89,7 +118,7 @@ export default function MealPlan() {
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
           <Text style={styles.muted}>Génération du plan…</Text>
-          <Text style={styles.mutedSmall}>Cela prend environ une minute.</Text>
+          <Text style={styles.mutedSmall}>Une trentaine de secondes.</Text>
         </View>
       ) : !plan ? (
         <View style={styles.center}>
@@ -115,7 +144,7 @@ export default function MealPlan() {
                     <Pressable
                       key={key}
                       style={styles.entry}
-                      onPress={() => setOpenKey(open ? null : key)}
+                      onPress={() => toggleEntry(key, e)}
                     >
                       <View style={styles.slotIcon}>
                         <Ionicons
@@ -146,12 +175,24 @@ export default function MealPlan() {
                                 ))}
                               </>
                             ) : null}
-                            {e.recipe.instructions ? (
-                              <>
-                                <Text style={styles.sectionTitle}>Préparation</Text>
-                                <Text style={styles.step}>{e.recipe.instructions}</Text>
-                              </>
-                            ) : null}
+                            <Text style={styles.sectionTitle}>Préparation</Text>
+                            {stepsLoading === e.recipe_id ? (
+                              <View style={styles.stepsLoading}>
+                                <ActivityIndicator
+                                  color={colors.primary}
+                                  size="small"
+                                />
+                                <Text style={styles.mutedSmall}>
+                                  Écriture de la recette…
+                                </Text>
+                              </View>
+                            ) : (
+                              <Text style={styles.step}>
+                                {e.recipe.instructions ||
+                                  steps[e.recipe_id] ||
+                                  "Préparation indisponible."}
+                              </Text>
+                            )}
                             <CookedButton
                               usesInventory={(e.recipe.ingredients ?? []).map(
                                 (i) => i.name
@@ -266,6 +307,12 @@ const styles = StyleSheet.create({
   ingName: { color: colors.text, fontSize: font.small, flex: 1 },
   ingQty: { color: colors.textSecondary, fontSize: font.small },
   step: { color: colors.text, fontSize: font.small, lineHeight: 19 },
+  stepsLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+  },
 
   primaryBtn: {
     flexDirection: "row",
