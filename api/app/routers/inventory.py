@@ -74,6 +74,8 @@ def estimate_shelf_life(
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Limite atteinte : {exc.limit} par jour. Réessaie demain.",
+            # Le front ajoute quand même les articles, sans date estimée :
+            # perdre les courses serait pire que perdre l'estimation.
         )
 
     try:

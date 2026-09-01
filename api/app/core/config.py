@@ -24,12 +24,27 @@ class Settings(BaseSettings):
     # (~50s observed), so leave generous headroom above it.
     ai_timeout_seconds: float = 120.0
 
-    # Daily per-user AI quotas (spec §9). Meal-plan generation is by far the
-    # most expensive call, so it gets the tightest budget.
-    quota_vision_per_day: int = 20
-    quota_search_per_day: int = 50
-    quota_meal_plan_per_day: int = 5
-    quota_shopping_per_day: int = 20
+    # Quotas IA quotidiens, par utilisateur (spec §9).
+    #
+    # Ce sont des garde-fous anti-abus, pas des limites d'usage : un
+    # utilisateur régulier consomme ~8 scans, 20 recherches et 4 plans par
+    # MOIS. Les valeurs ci-dessous sont trois à quinze fois au-dessus de cet
+    # usage tout en bornant ce qu'un seul compte peut coûter.
+    #
+    # Coûts mesurés le 2026-09-01 (appels réels, tokens facturés) :
+    #   scan photo ~1,06 ¢ · recherche ~1,07 ¢ · recette ~1,21 ¢
+    #   plan de repas ~13,37 ¢ · courses ~0,27 ¢
+    # Le plan de repas coûte à lui seul autant que douze recherches, d'où le
+    # quota le plus serré. Exposition maximale d'un compte : ~15,6 $/mois,
+    # contre ~45 $ avec les quotas de développement précédents (−66 %).
+    #
+    # Limite connue : un quota quotidien borne mal un coût mensuel (2 plans par
+    # jour = 60 par mois). Le vrai plafond mensuel viendra avec les paliers
+    # d'abonnement.
+    quota_vision_per_day: int = 5
+    quota_search_per_day: int = 15  # partagé entre la liste et le détail
+    quota_meal_plan_per_day: int = 2
+    quota_shopping_per_day: int = 10
 
     # Shared secret for internal cron jobs (e.g. photo cleanup).
     cron_secret: str = ""
