@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { supabase } from "@/lib/supabase";
 import { unregisterExpiryAlerts } from "@/lib/notifications";
+import { FeedbackForm } from "@/components/FeedbackForm";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 type Profile = {
@@ -98,6 +99,8 @@ export default function ProfileScreen() {
       {error && <Text style={styles.error}>{error}</Text>}
 
       <View style={styles.spacer} />
+
+      <FeedbackForm />
 
       <Pressable
         style={styles.signOutBtn}
