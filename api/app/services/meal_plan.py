@@ -72,9 +72,11 @@ def _generate(profile_id: str, week_start: str, budget: float | None) -> MealPla
     )
     resp = _client().messages.parse(
         model=MEAL_PLAN_MODEL,
-        # Sans les préparations, la sortie mesurée tombe à ~3 500 tokens ;
-        # 8 000 laisse plus du double de marge, là où 16 000 était atteint.
-        max_tokens=8000,
+        # Sortie mesurée sans les préparations : 6 816 tokens (contre 13 239
+        # avec). max_tokens est un plafond, pas un coût — on ne paie que ce qui
+        # est généré — donc autant garder une marge large : 12 000 laisse 76 %
+        # de réserve, là où 16 000 était réellement atteint avant le découpage.
+        max_tokens=12000,
         system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user_content}],
         output_format=MealPlanGeneration,
