@@ -2,7 +2,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import inventory, jobs, meal_plan, profiles, search, shopping
+from app.routers import (
+    billing,
+    inventory,
+    jobs,
+    meal_plan,
+    profiles,
+    search,
+    shopping,
+)
 
 app = FastAPI(title="SmartChef AI API")
 
@@ -23,6 +31,7 @@ app.include_router(jobs.router)
 app.include_router(search.router)
 app.include_router(meal_plan.router)
 app.include_router(shopping.router)
+app.include_router(billing.router)
 
 
 @app.get("/health")

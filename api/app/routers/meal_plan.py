@@ -7,8 +7,8 @@ from app.models.meal_plan import (
     InstructionsResponse,
     MealPlanView,
 )
-from app.services import meal_plan, quota
-from app.services.quota import QuotaExceeded
+from app import quota_guard
+from app.services import meal_plan
 
 router = APIRouter(prefix="/meal-plan", tags=["meal-plan"])
 
@@ -17,13 +17,7 @@ router = APIRouter(prefix="/meal-plan", tags=["meal-plan"])
 def generate(body: GenerateRequest, profile_id: str = Depends(get_profile_id)):
     """Generate + persist a weekly meal plan (F2) from the caller's inventory,
     profile, allergies and budget."""
-    try:
-        quota.consume(profile_id, "meal_plan")
-    except QuotaExceeded as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Limite atteinte : {exc.limit} plans par jour. Réessaie demain.",
-        )
+    quota_guard.consume(profile_id, "meal_plan")
 
     try:
         return meal_plan.generate_meal_plan(profile_id, body.week_start, body.budget)
@@ -43,16 +37,10 @@ def instructions(body: InstructionsRequest, profile_id: str = Depends(get_profil
     rouvrir la même recette ne relance aucun appel.
 
     Compté sur le quota `search` : c'est exactement le même geste et le même
-    coût qu'ouvrir une recette depuis la recherche. Le quota `meal_plan`
-    (2/jour) doit rester réservé à la génération de la semaine.
+    coût qu'ouvrir une recette depuis la recherche. Le quota `meal_plan` doit
+    rester réservé à la génération de la semaine.
     """
-    try:
-        quota.consume(profile_id, "search")
-    except QuotaExceeded as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Limite atteinte : {exc.limit} recettes par jour. Réessaie demain.",
-        )
+    quota_guard.consume(profile_id, "search")
 
     try:
         return InstructionsResponse(

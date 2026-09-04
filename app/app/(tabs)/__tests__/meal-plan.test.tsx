@@ -2,11 +2,15 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 const mockGenerate = jest.fn();
 const mockFetchInstructions = jest.fn();
+const mockBillingStatus = jest.fn();
 
 jest.mock("@/lib/mealPlan", () => ({
   generateMealPlan: (w: string, b?: number) => mockGenerate(w, b),
   fetchInstructions: (id: string) => mockFetchInstructions(id),
   currentWeekStart: () => "2026-08-03",
+}));
+jest.mock("@/lib/billing", () => ({
+  fetchBillingStatus: () => mockBillingStatus(),
 }));
 
 import MealPlan from "../meal-plan";
@@ -45,7 +49,28 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockGenerate.mockResolvedValue(plan([entry()]));
   mockFetchInstructions.mockResolvedValue("1. Rôtir le poulet 25 min à 200 °C.");
+  mockBillingStatus.mockResolvedValue({ plan: "premium" });
 });
+
+// ── Le plan de repas est réservé au Premium ───────────────────────
+test("un compte gratuit voit l'offre, pas le bouton", async () => {
+  mockBillingStatus.mockResolvedValue({ plan: "free" });
+
+  const { findByText, queryByText } = render(<MealPlan />);
+
+  await findByText(/Découvrir Premium/);
+  expect(queryByText("Générer ma semaine")).toBeNull();
+  expect(mockGenerate).not.toHaveBeenCalled();
+}, 20000);
+
+test("si le palier est inconnu, l'écran reste utilisable", async () => {
+  // API endormie ou hors ligne : mieux vaut laisser essayer — le serveur
+  // refusera de toute façon (402) si le palier ne le permet pas.
+  mockBillingStatus.mockRejectedValue(new Error("hors ligne"));
+
+  const { findByText } = render(<MealPlan />);
+  await findByText("Générer ma semaine");
+}, 20000);
 
 test("génère la semaine avec le coût et les recettes", async () => {
   const { getByText, findByText } = render(<MealPlan />);

@@ -49,6 +49,18 @@ class Settings(BaseSettings):
     # Shared secret for internal cron jobs (e.g. photo cleanup).
     cron_secret: str = ""
 
+    # ── Abonnement Stripe ────────────────────────────────────────────
+    # Vides en développement : les routes /billing répondent alors 503 plutôt
+    # que de planter, et le reste de l'app fonctionne normalement.
+    stripe_secret_key: str = ""
+    stripe_price_premium: str = ""  # identifiant du prix récurrent (price_...)
+    # Signature des webhooks. SANS ce secret, n'importe qui pourrait appeler
+    # /billing/webhook et s'offrir un abonnement — la route refuse donc de
+    # traiter quoi que ce soit s'il est absent.
+    stripe_webhook_secret: str = ""
+    # Où Stripe renvoie l'utilisateur après paiement.
+    app_url: str = "https://alpha100bg-eng.github.io/smartchef/"
+
     # Comma-separated origins allowed to call the API from a browser.
     # Dev default covers the Expo web dev server on either loopback spelling.
     cors_origins: str = "http://localhost:8081,http://127.0.0.1:8081"

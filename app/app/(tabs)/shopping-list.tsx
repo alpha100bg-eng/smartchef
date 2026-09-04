@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,9 @@ import {
   type ShoppingItem,
   type ShoppingListView,
 } from "@/lib/shopping";
+import { fetchBillingStatus } from "@/lib/billing";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
+import { PremiumGate } from "@/components/PremiumGate";
 
 const AISLE_ICONS: Record<string, React.ComponentProps<typeof Ionicons>["name"]> = {
   "Fruits et légumes": "nutrition-outline",
@@ -36,6 +38,13 @@ export default function ShoppingList() {
   const [storing, setStoring] = useState(false);
   const [stored, setStored] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [premium, setPremium] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetchBillingStatus()
+      .then((s) => setPremium(s.plan === "premium"))
+      .catch(() => setPremium(true)); // API injoignable : le serveur tranchera
+  }, []);
 
   async function generate() {
     setError(null);
@@ -115,6 +124,19 @@ export default function ShoppingList() {
   });
   const aisles = Object.keys(byAisle).sort();
   const done = items.filter((i) => i.checked).length;
+
+  if (premium === false) {
+    return (
+      <View style={styles.screen}>
+        <Text style={styles.title}>Mes courses</Text>
+        <PremiumGate
+          icon="cart-outline"
+          title="Rien à racheter en double"
+          pitch="La liste se construit à partir de ton plan de repas, rangée par rayon, en retirant ce que tu as déjà. Elle fait partie de Premium, comme le plan."
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>

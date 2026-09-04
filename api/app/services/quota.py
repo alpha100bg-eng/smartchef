@@ -1,41 +1,63 @@
-"""Daily AI quota per user (spec §9).
+"""Quotas IA mensuels, par utilisateur et par palier (spec §9).
 
-Each AI endpoint consumes one unit of its own bucket. Counting happens inside
-Postgres (`consume_ai_quota`) so two concurrent requests can't both slip past
-the limit — a read-then-write in Python would allow exactly that.
+Le comptage se fait dans Postgres (`consume_ai_quota_period`) pour que deux
+requêtes simultanées ne puissent pas passer toutes les deux : un read-then-write
+en Python le permettrait.
+
+Mensuel et non quotidien : un plafond quotidien borne mal un coût mensuel
+(2 plans/jour = 60 par mois), et c'est le coût mensuel qui décide de ce que
+l'app peut supporter.
 """
-from app.core.config import settings
 from app.core.supabase_client import get_supabase_admin
+from app.services import plan as plan_svc
 
 
 class QuotaExceeded(Exception):
-    """Raised when the caller has used up today's allowance for a bucket."""
+    """Le palier de l'appelant permet cette action, mais son enveloppe du mois
+    est épuisée."""
 
-    def __init__(self, kind: str, limit: int):
+    def __init__(self, kind: str, limit: int, plan: str):
         self.kind = kind
         self.limit = limit
-        super().__init__(f"quota exceeded for {kind} ({limit}/day)")
-
-
-def limit_for(kind: str) -> int:
-    return {
-        "vision": settings.quota_vision_per_day,
-        "search": settings.quota_search_per_day,
-        "meal_plan": settings.quota_meal_plan_per_day,
-        "shopping": settings.quota_shopping_per_day,
-    }.get(kind, 0)
+        self.plan = plan
+        super().__init__(f"quota exceeded for {kind} ({limit}/month, {plan})")
 
 
 def consume(profile_id: str, kind: str) -> None:
-    """Consume one unit or raise QuotaExceeded. Call before the AI request."""
-    limit = limit_for(kind)
+    """Consomme une unité, ou lève.
+
+    - `PremiumRequired` si la fonctionnalité est fermée au palier (limite 0) :
+      inviter à s'abonner, pas à revenir le mois prochain.
+    - `QuotaExceeded` si l'enveloppe du mois est épuisée.
+    """
+    current = plan_svc.current_plan(profile_id)
+    limit = plan_svc.limit_of(current, kind)
+
+    if limit <= 0:
+        raise plan_svc.PremiumRequired(kind)
+
     allowed = (
         get_supabase_admin()
         .rpc(
-            "consume_ai_quota",
-            {"p_profile_id": profile_id, "p_kind": kind, "p_limit": limit},
+            "consume_ai_quota_period",
+            {
+                "p_profile_id": profile_id,
+                "p_kind": kind,
+                "p_limit": limit,
+                "p_monthly": True,
+            },
         )
         .execute()
     )
     if not allowed.data:
-        raise QuotaExceeded(kind, limit)
+        raise QuotaExceeded(kind, limit, current)
+
+
+def usage_this_month(profile_id: str) -> dict[str, int]:
+    """Consommation du mois par type, pour afficher ce qu'il reste."""
+    rows = (
+        get_supabase_admin()
+        .rpc("ai_usage_this_month", {"p_profile_id": profile_id})
+        .execute()
+    )
+    return {r["kind"]: r["used"] for r in (rows.data or [])}

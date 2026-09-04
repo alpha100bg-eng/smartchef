@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -16,8 +16,10 @@ import {
   type MealPlanView,
   type MealPlanEntry,
 } from "@/lib/mealPlan";
+import { fetchBillingStatus } from "@/lib/billing";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { CookedButton } from "@/components/CookedButton";
+import { PremiumGate } from "@/components/PremiumGate";
 
 const SLOT_LABELS: Record<string, string> = {
   breakfast: "Petit-déj",
@@ -48,6 +50,17 @@ export default function MealPlan() {
   // redemander pour chaque créneau.
   const [steps, setSteps] = useState<Record<string, string>>({});
   const [stepsLoading, setStepsLoading] = useState<string | null>(null);
+  // null tant qu'on ne sait pas : évite de montrer l'offre une fraction de
+  // seconde à quelqu'un qui est déjà abonné.
+  const [premium, setPremium] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetchBillingStatus()
+      .then((s) => setPremium(s.plan === "premium"))
+      // API injoignable : laisser l'écran normal. Le serveur refusera de
+      // toute façon si le palier ne le permet pas.
+      .catch(() => setPremium(true));
+  }, []);
 
   async function generate() {
     setError(null);
@@ -94,6 +107,19 @@ export default function MealPlan() {
     plan?.budget_target != null &&
     plan?.estimated_cost != null &&
     plan.estimated_cost > plan.budget_target;
+
+  if (premium === false) {
+    return (
+      <View style={styles.screen}>
+        <Text style={styles.title}>Ma semaine</Text>
+        <PremiumGate
+          icon="calendar-outline"
+          title="Sept jours, zéro question"
+          pitch="Le plan de la semaine compose tes repas à partir de ton frigo, ton budget et ton régime. C'est la fonctionnalité la plus gourmande de l'app — elle fait partie de Premium."
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>

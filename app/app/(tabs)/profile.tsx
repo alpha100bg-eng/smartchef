@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
-import { View, Text, Pressable, ActivityIndicator, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { supabase } from "@/lib/supabase";
 import { unregisterExpiryAlerts } from "@/lib/notifications";
 import { FeedbackForm } from "@/components/FeedbackForm";
+import { PremiumCard } from "@/components/PremiumCard";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 type Profile = {
@@ -98,9 +106,16 @@ export default function ProfileScreen() {
 
       {error && <Text style={styles.error}>{error}</Text>}
 
-      <View style={styles.spacer} />
-
-      <FeedbackForm />
+      {/* Abonnement et avis allongent l'écran au-delà d'un téléphone :
+          le contenu défile, la déconnexion reste ancrée en bas. */}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollBody}
+        showsVerticalScrollIndicator={false}
+      >
+        <PremiumCard email={email} />
+        <FeedbackForm />
+      </ScrollView>
 
       <Pressable
         style={styles.signOutBtn}
@@ -177,7 +192,8 @@ const styles = StyleSheet.create({
     fontSize: font.small,
   },
 
-  spacer: { flex: 1 },
+  scroll: { flex: 1 },
+  scrollBody: { gap: spacing.sm, paddingTop: spacing.xs, paddingBottom: spacing.sm },
   error: { color: colors.danger },
   signOutBtn: {
     flexDirection: "row",

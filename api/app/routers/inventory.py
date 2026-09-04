@@ -3,8 +3,8 @@ from pydantic import BaseModel, Field
 
 from app.deps import get_profile_id
 from app.models.inventory import FromPhotoRequest, VisionResult
-from app.services import quota, shelf_life, vision
-from app.services.quota import QuotaExceeded
+from app import quota_guard
+from app.services import shelf_life, vision
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 
@@ -37,13 +37,7 @@ def inventory_from_photo(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="storage_path does not belong to the caller",
         )
-    try:
-        quota.consume(profile_id, "vision")
-    except QuotaExceeded as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Limite atteinte : {exc.limit} scans par jour. Réessaie demain.",
-        )
+    quota_guard.consume(profile_id, "vision")
 
     try:
         return vision.detect_from_storage_path(body.storage_path)
@@ -68,15 +62,7 @@ def estimate_shelf_life(
     Compté sur le quota `shopping` : cet appel prolonge le parcours courses, et
     ouvrir un quota dédié pour un appel Haiku ne se justifie pas.
     """
-    try:
-        quota.consume(profile_id, "shopping")
-    except QuotaExceeded as exc:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Limite atteinte : {exc.limit} par jour. Réessaie demain.",
-            # Le front ajoute quand même les articles, sans date estimée :
-            # perdre les courses serait pire que perdre l'estimation.
-        )
+    quota_guard.consume(profile_id, "shopping")
 
     try:
         return ShelfLifeResponse(expiry_dates=shelf_life.estimate(body.names))
