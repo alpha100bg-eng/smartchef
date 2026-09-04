@@ -1,10 +1,33 @@
 import { useState } from "react";
-import { View, TextInput, Text, Pressable, StyleSheet } from "react-native";
+import { View, TextInput, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { supabase } from "@/lib/supabase";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
+
+/** Les trois gestes de l'app, dans l'ordre où on les fait. */
+const ETAPES: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  titre: string;
+  texte: string;
+}[] = [
+  {
+    icon: "camera-outline",
+    titre: "Photographie ton frigo",
+    texte: "L'app reconnaît les aliments et estime combien de temps ils tiennent.",
+  },
+  {
+    icon: "restaurant-outline",
+    titre: "Reçois des recettes",
+    texte: "Des idées avec ce que tu as déjà, en priorisant ce qui périme bientôt.",
+  },
+  {
+    icon: "cart-outline",
+    titre: "Ne rachète rien en double",
+    texte: "La liste de courses retire ce qui est encore dans ton frigo.",
+  },
+];
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -12,7 +35,16 @@ export default function Login() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Un visiteur qui arrive d'un lien ne sait pas ce qu'est SmartChef :
+  // lui présenter « Email / Mot de passe » d'emblée le fait repartir.
+  const [showForm, setShowForm] = useState(false);
   const router = useRouter();
+
+  function openForm(next: "signin" | "signup") {
+    setMode(next);
+    setError(null);
+    setShowForm(true);
+  }
 
   async function submit() {
     setError(null);
@@ -33,17 +65,60 @@ export default function Login() {
     // signin success is handled by the auth-state listener in _layout.tsx
   }
 
+  const brand = (
+    <View style={styles.brand}>
+      <View style={styles.logo}>
+        <Ionicons name="leaf" size={32} color={colors.onPrimary} />
+      </View>
+      <Text style={styles.title}>SmartChef</Text>
+      <Text style={styles.tagline}>
+        Photographie ton frigo, on s'occupe du reste.
+      </Text>
+    </View>
+  );
+
+  // ── Page d'accueil : montrer le produit avant de demander un compte ──
+  if (!showForm) {
+    return (
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.landing}
+        showsVerticalScrollIndicator={false}
+      >
+        {brand}
+
+        <View style={styles.steps}>
+          {ETAPES.map((e) => (
+            <View key={e.titre} style={styles.step}>
+              <View style={styles.stepIcon}>
+                <Ionicons name={e.icon} size={20} color={colors.primaryDark} />
+              </View>
+              <View style={styles.stepBody}>
+                <Text style={styles.stepTitle}>{e.titre}</Text>
+                <Text style={styles.stepText}>{e.texte}</Text>
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <Pressable style={styles.button} onPress={() => openForm("signup")}>
+          <Text style={styles.buttonText}>Commencer gratuitement</Text>
+        </Pressable>
+        <Text style={styles.reassure}>
+          Sans installation, sans carte bancaire.
+        </Text>
+
+        <Pressable onPress={() => openForm("signin")}>
+          <Text style={styles.switch}>J'ai déjà un compte</Text>
+        </Pressable>
+      </ScrollView>
+    );
+  }
+
   return (
     <View style={styles.screen}>
-      <View style={styles.brand}>
-        <View style={styles.logo}>
-          <Ionicons name="leaf" size={32} color={colors.onPrimary} />
-        </View>
-        <Text style={styles.title}>SmartChef</Text>
-        <Text style={styles.tagline}>
-          Photographie ton frigo, on s'occupe du reste.
-        </Text>
-      </View>
+      <View style={styles.centered}>
+      {brand}
 
       <View style={styles.card}>
         <TextInput
@@ -80,16 +155,24 @@ export default function Login() {
             : "Déjà un compte ? Se connecter"}
         </Text>
       </Pressable>
+
+      <Pressable onPress={() => setShowForm(false)}>
+        <Text style={styles.back}>← C'est quoi SmartChef ?</Text>
+      </Pressable>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: colors.bg,
+  screen: { flex: 1, backgroundColor: colors.bg },
+  centered: { flex: 1, justifyContent: "center", padding: spacing.lg },
+  landing: {
     padding: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
+    justifyContent: "center",
+    flexGrow: 1,
   },
   brand: { alignItems: "center", marginBottom: spacing.xl },
   logo: {
@@ -143,4 +226,38 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   error: { color: colors.danger, fontSize: font.small },
+
+  // ── Page d'accueil ────────────────────────────────────────────────
+  steps: { gap: spacing.sm, marginBottom: spacing.lg },
+  step: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    ...shadow.card,
+  },
+  stepIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepBody: { flex: 1, gap: 2 },
+  stepTitle: { fontSize: font.body, fontWeight: "600", color: colors.text },
+  stepText: { fontSize: font.small, color: colors.textSecondary, lineHeight: 19 },
+  reassure: {
+    textAlign: "center",
+    color: colors.textMuted,
+    fontSize: font.tiny,
+    marginTop: spacing.xs,
+  },
+  back: {
+    textAlign: "center",
+    marginTop: spacing.sm,
+    color: colors.textMuted,
+    fontSize: font.small,
+  },
 });
