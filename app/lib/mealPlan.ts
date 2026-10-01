@@ -1,4 +1,5 @@
 import { apiFetch } from "./api";
+import { supabase } from "./supabase";
 import type { Recipe } from "./search";
 
 export type MealPlanEntry = {
@@ -34,6 +35,36 @@ export async function generateMealPlan(
     method: "POST",
     body: JSON.stringify({ week_start: weekStart, budget: budget ?? null }),
   });
+}
+
+/**
+ * Budget hebdomadaire du profil.
+ *
+ * Il n'est plus demandé à l'inscription — cinq champs avant d'avoir rien vu
+ * faisaient fuir deux inscrits sur trois. Il est saisi au moment du plan de
+ * repas, puis mémorisé pour ne plus être redemandé.
+ */
+export async function loadBudget(): Promise<number | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase
+    .from("profiles")
+    .select("budget_weekly")
+    .eq("id", user.id)
+    .single();
+  return (data?.budget_weekly as number | null) ?? null;
+}
+
+export async function rememberBudget(value: number): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  // Échec silencieux : le plan vient d'être généré, échouer ici ne doit pas
+  // faire croire que la génération a raté.
+  await supabase.from("profiles").update({ budget_weekly: value }).eq("id", user.id);
 }
 
 /**

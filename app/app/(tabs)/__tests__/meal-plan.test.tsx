@@ -3,11 +3,15 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 const mockGenerate = jest.fn();
 const mockFetchInstructions = jest.fn();
 const mockBillingStatus = jest.fn();
+const mockLoadBudget = jest.fn();
+const mockRememberBudget = jest.fn();
 
 jest.mock("@/lib/mealPlan", () => ({
   generateMealPlan: (w: string, b?: number) => mockGenerate(w, b),
   fetchInstructions: (id: string) => mockFetchInstructions(id),
   currentWeekStart: () => "2026-08-03",
+  loadBudget: () => mockLoadBudget(),
+  rememberBudget: (v: number) => mockRememberBudget(v),
 }));
 jest.mock("@/lib/billing", () => ({
   fetchBillingStatus: () => mockBillingStatus(),
@@ -52,7 +56,61 @@ beforeEach(() => {
   mockGenerate.mockResolvedValue(plan([entry()]));
   mockFetchInstructions.mockResolvedValue("1. Rôtir le poulet 25 min à 200 °C.");
   mockBillingStatus.mockResolvedValue({ plan: "premium" });
+  mockLoadBudget.mockResolvedValue(null);
+  mockRememberBudget.mockResolvedValue(undefined);
 });
+
+// ── Le budget est demandé là où il sert ───────────────────────────
+test("le budget saisi part avec la génération et est mémorisé", async () => {
+  const { getByText, getByPlaceholderText, findByText } = render(<MealPlan />);
+  await findByText("Générer ma semaine");
+
+  fireEvent.changeText(
+    getByPlaceholderText("Budget de la semaine (optionnel)"),
+    "60"
+  );
+  fireEvent.press(getByText("Générer ma semaine"));
+
+  await waitFor(() => expect(mockGenerate).toHaveBeenCalledWith("2026-08-03", 60));
+  await waitFor(() => expect(mockRememberBudget).toHaveBeenCalledWith(60));
+}, 20000);
+
+test("sans budget, aucune contrainte n'est envoyée", async () => {
+  const { getByText, findByText } = render(<MealPlan />);
+  await findByText("Générer ma semaine");
+
+  fireEvent.press(getByText("Générer ma semaine"));
+
+  await waitFor(() =>
+    expect(mockGenerate).toHaveBeenCalledWith("2026-08-03", undefined)
+  );
+  expect(mockRememberBudget).not.toHaveBeenCalled();
+}, 20000);
+
+test("une saisie absurde ne devient pas une contrainte", async () => {
+  const { getByText, getByPlaceholderText, findByText } = render(<MealPlan />);
+  await findByText("Générer ma semaine");
+
+  fireEvent.changeText(getByPlaceholderText("Budget de la semaine (optionnel)"), "abc");
+  fireEvent.press(getByText("Générer ma semaine"));
+
+  await waitFor(() =>
+    expect(mockGenerate).toHaveBeenCalledWith("2026-08-03", undefined)
+  );
+}, 20000);
+
+test("un budget déjà connu est pré-rempli", async () => {
+  mockLoadBudget.mockResolvedValue(75);
+
+  const { getByPlaceholderText, findByText } = render(<MealPlan />);
+  await findByText("Générer ma semaine");
+
+  await waitFor(() =>
+    expect(
+      getByPlaceholderText("Budget de la semaine (optionnel)").props.value
+    ).toBe("75")
+  );
+}, 20000);
 
 // ── Le plan de repas est réservé au Premium ───────────────────────
 test("un compte gratuit voit l'offre, pas le bouton", async () => {

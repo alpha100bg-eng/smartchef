@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   View,
   Text,
+  TextInput,
   Pressable,
   ScrollView,
   ActivityIndicator,
@@ -11,6 +12,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import {
   generateMealPlan,
+  loadBudget,
+  rememberBudget,
   fetchInstructions,
   currentWeekStart,
   type MealPlanView,
@@ -53,6 +56,14 @@ export default function MealPlan() {
   // null tant qu'on ne sait pas : évite de montrer l'offre une fraction de
   // seconde à quelqu'un qui est déjà abonné.
   const [premium, setPremium] = useState<boolean | null>(null);
+  const [budget, setBudget] = useState("");
+
+  // Budget déjà connu : le pré-remplir plutôt que de le redemander.
+  useEffect(() => {
+    loadBudget()
+      .then((b) => b != null && setBudget(String(b)))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetchBillingStatus()
@@ -70,7 +81,12 @@ export default function MealPlan() {
     setOpenKey(null);
     setSteps({});
     try {
-      setPlan(await generateMealPlan(currentWeekStart()));
+      // Le budget n'est plus demandé à l'inscription : il est saisi ici,
+      // au seul endroit où il change le résultat. Vide = pas de contrainte.
+      const n = Number(budget.trim());
+      const valide = budget.trim() && Number.isFinite(n) && n > 0 ? n : undefined;
+      setPlan(await generateMealPlan(currentWeekStart(), valide));
+      if (valide) void rememberBudget(valide);
     } catch (e: any) {
       setError(e.message ?? "Échec de la génération");
     } finally {
@@ -238,6 +254,20 @@ export default function MealPlan() {
         </ScrollView>
       )}
 
+      <View style={styles.budgetRow}>
+        <Ionicons name="wallet-outline" size={17} color={colors.textMuted} />
+        <TextInput
+          style={styles.budgetInput}
+          placeholder="Budget de la semaine (optionnel)"
+          placeholderTextColor={colors.textMuted}
+          keyboardType="numeric"
+          value={budget}
+          onChangeText={setBudget}
+          accessibilityLabel="Budget hebdomadaire en euros"
+        />
+        {budget.trim() ? <Text style={styles.budgetUnit}>€</Text> : null}
+      </View>
+
       <Pressable style={styles.primaryBtn} onPress={generate} disabled={loading}>
         <Ionicons name="sparkles-outline" size={18} color={colors.onPrimary} />
         <Text style={styles.primaryBtnText}>
@@ -341,6 +371,23 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.xs,
   },
+
+  budgetRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.card,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    ...shadow.card,
+  },
+  budgetInput: {
+    flex: 1,
+    paddingVertical: 13,
+    fontSize: font.small,
+    color: colors.text,
+  },
+  budgetUnit: { color: colors.textSecondary, fontSize: font.small, fontWeight: "600" },
 
   primaryBtn: {
     flexDirection: "row",
