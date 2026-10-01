@@ -13,7 +13,10 @@ from dataclasses import dataclass
 from app.core.supabase_client import get_supabase_admin
 
 FREE = "free"
+TRIAL = "trial"
 PREMIUM = "premium"
+
+TRIAL_DAYS = 7
 
 
 @dataclass(frozen=True)
@@ -32,6 +35,9 @@ class Limits:
 # bornant le coût à ~2,50 € par abonné dans le pire des cas.
 LIMITS = {
     FREE: Limits(vision=3, search=10, meal_plan=0, shopping=0),
+    # L'essai donne l'accès complet : son but est précisément de faire vivre
+    # le plan de repas, qu'un compte gratuit ne verrait jamais.
+    TRIAL: Limits(vision=100, search=300, meal_plan=8, shopping=40),
     PREMIUM: Limits(vision=100, search=300, meal_plan=8, shopping=40),
 }
 
@@ -50,32 +56,72 @@ class PremiumRequired(Exception):
         super().__init__(f"{feature} requires premium")
 
 
-def current_plan(profile_id: str) -> str:
-    """Palier effectif. Une période payée expirée redevient gratuite, même si
-    la colonne `plan` n'a pas encore été remise à jour par le webhook."""
+def _parse(ts) -> "datetime | None":
+    from datetime import datetime
+
+    if not ts:
+        return None
+    try:
+        return datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def trial_ends_at(profile_id: str) -> "datetime | None":
     row = (
         get_supabase_admin()
         .table("profiles")
-        .select("plan, premium_until")
+        .select("trial_ends_at")
+        .eq("id", profile_id)
+        .single()
+        .execute()
+    )
+    return _parse((row.data or {}).get("trial_ends_at"))
+
+
+def current_plan(profile_id: str) -> str:
+    """Palier effectif : `premium`, `trial` ou `free`.
+
+    Un abonnement payé prime sur l'essai. Une période payée expirée redevient
+    gratuite même si la colonne `plan` n'a pas encore été remise à jour par le
+    webhook : la date fait foi, pas la colonne.
+    """
+    from datetime import datetime, timezone
+
+    row = (
+        get_supabase_admin()
+        .table("profiles")
+        .select("plan, premium_until, trial_ends_at")
         .eq("id", profile_id)
         .single()
         .execute()
     )
     data = row.data or {}
-    if data.get("plan") != PREMIUM:
-        return FREE
+    now = datetime.now(timezone.utc)
 
-    until = data.get("premium_until")
-    if until:
-        from datetime import datetime, timezone
+    if data.get("plan") == PREMIUM:
+        until = _parse(data.get("premium_until"))
+        # Date absente ou illisible : ne pas punir quelqu'un qui paie.
+        if until is None or until >= now:
+            return PREMIUM
 
-        try:
-            end = datetime.fromisoformat(str(until).replace("Z", "+00:00"))
-        except ValueError:
-            return PREMIUM  # date illisible : ne pas punir un abonné payant
-        if end < datetime.now(timezone.utc):
-            return FREE
-    return PREMIUM
+    ends = _parse(data.get("trial_ends_at"))
+    if ends is not None and ends > now:
+        return TRIAL
+
+    return FREE
+
+
+def trial_days_left(ends: "datetime | None") -> int:
+    """Jours entiers restants, arrondis au supérieur : le dernier jour affiche
+    « 1 jour » plutôt que « 0 »."""
+    from datetime import datetime, timezone
+    import math
+
+    if ends is None:
+        return 0
+    delta = ends - datetime.now(timezone.utc)
+    return max(0, math.ceil(delta.total_seconds() / 86400))
 
 
 def limits_for(plan: str) -> Limits:

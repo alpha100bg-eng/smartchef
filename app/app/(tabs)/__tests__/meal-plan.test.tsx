@@ -11,6 +11,8 @@ jest.mock("@/lib/mealPlan", () => ({
 }));
 jest.mock("@/lib/billing", () => ({
   fetchBillingStatus: () => mockBillingStatus(),
+  hasFullAccess: (s: { plan?: string } | null) =>
+    s?.plan === "premium" || s?.plan === "trial",
 }));
 
 import MealPlan from "../meal-plan";
@@ -61,6 +63,17 @@ test("un compte gratuit voit l'offre, pas le bouton", async () => {
   await findByText(/Découvrir Premium/);
   expect(queryByText("Générer ma semaine")).toBeNull();
   expect(mockGenerate).not.toHaveBeenCalled();
+}, 20000);
+
+test("un compte en essai accède au plan", async () => {
+  // Tout l'intérêt de l'essai : faire vivre la fonctionnalité qu'un compte
+  // gratuit ne verrait jamais. La bloquer ici la viderait de son sens.
+  mockBillingStatus.mockResolvedValue({ plan: "trial", trial_days_left: 5 });
+
+  const { findByText, queryByText } = render(<MealPlan />);
+
+  await findByText("Générer ma semaine");
+  expect(queryByText(/Découvrir Premium/)).toBeNull();
 }, 20000);
 
 test("si le palier est inconnu, l'écran reste utilisable", async () => {

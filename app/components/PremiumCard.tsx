@@ -61,12 +61,28 @@ export function PremiumCard({ email }: { email?: string | null }) {
     );
   }
 
+  const enEssai = status.plan === "trial";
+  const jours = status.trial_days_left ?? 0;
+
   return (
     <View style={styles.card}>
       <View style={styles.head}>
-        <Text style={styles.title}>Passer en Premium</Text>
+        <Text style={styles.title}>
+          {enEssai ? "Ton essai" : "Passer en Premium"}
+        </Text>
         <Text style={styles.price}>{status.price_eur} €<Text style={styles.perMonth}>/mois</Text></Text>
       </View>
+
+      {enEssai && (
+        <View style={styles.trialBanner}>
+          <Ionicons name="time-outline" size={16} color={colors.primaryDark} />
+          <Text style={styles.trialText}>
+            {jours <= 1
+              ? "Dernier jour d'accès complet"
+              : `Accès complet encore ${jours} jours`}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.quotas}>
         <Quota label="scans" left={remaining(status, "vision")} />
@@ -74,10 +90,17 @@ export function PremiumCard({ email }: { email?: string | null }) {
       </View>
       <Text style={styles.quotaNote}>Ce qu'il te reste ce mois-ci.</Text>
 
+      <Text style={styles.listHead}>
+        {enEssai ? "Ce que tu perdras à la fin de l'essai" : "Avec Premium"}
+      </Text>
       <View style={styles.list}>
         {AVANTAGES.map((a) => (
           <View key={a} style={styles.listRow}>
-            <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+            <Ionicons
+              name={enEssai ? "alert-circle-outline" : "checkmark-circle"}
+              size={16}
+              color={enEssai ? colors.warn : colors.primary}
+            />
             <Text style={styles.listText}>{a}</Text>
           </View>
         ))}
@@ -90,7 +113,9 @@ export function PremiumCard({ email }: { email?: string | null }) {
           {opening ? (
             <ActivityIndicator color={colors.onPrimary} />
           ) : (
-            <Text style={styles.ctaText}>S'abonner</Text>
+            <Text style={styles.ctaText}>
+              {enEssai ? "Garder l'accès complet" : "S'abonner"}
+            </Text>
           )}
         </Pressable>
       ) : (
@@ -136,6 +161,24 @@ const styles = StyleSheet.create({
   quotaLabel: { fontSize: font.tiny, color: colors.textSecondary },
   quotaNote: { fontSize: font.tiny, color: colors.textMuted, marginTop: -6 },
 
+  trialBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  trialText: { color: colors.primaryDark, fontWeight: "600", fontSize: font.small },
+
+  listHead: {
+    fontSize: font.tiny,
+    fontWeight: "700",
+    color: colors.textSecondary,
+    textTransform: "uppercase",
+    marginBottom: -3,
+  },
   list: { gap: 5 },
   listRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   listText: { flex: 1, fontSize: font.small, color: colors.text },

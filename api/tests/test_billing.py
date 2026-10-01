@@ -203,13 +203,121 @@ def test_status_exposes_the_plan_and_what_is_left(ec_keys):
     assert body["price_eur"] == "4,99"
 
 
+def _profile(**fields):
+    """Simulacre Supabase renvoyant une ligne de profil."""
+    admin = MagicMock()
+    admin.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value = MagicMock(
+        data=fields
+    )
+    return admin
+
+
+def _in(days: int) -> str:
+    from datetime import datetime, timedelta, timezone
+
+    return (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
+
+
 def test_expired_premium_reads_as_free():
     """Le webhook peut tarder ou manquer : la date fait foi, pas la colonne."""
     from app.services import plan as plan_mod
 
-    admin = MagicMock()
-    admin.table.return_value.select.return_value.eq.return_value.single.return_value.execute.return_value = MagicMock(
-        data={"plan": PREMIUM, "premium_until": "2020-01-01T00:00:00+00:00"}
-    )
-    with patch.object(plan_mod, "get_supabase_admin", return_value=admin):
+    with patch.object(plan_mod, "get_supabase_admin",
+                      return_value=_profile(plan=PREMIUM,
+                                            premium_until="2020-01-01T00:00:00+00:00",
+                                            trial_ends_at="2020-01-01T00:00:00+00:00")):
         assert plan_mod.current_plan(PID) == FREE
+
+
+# ── Essai gratuit de 7 jours ────────────────────────────────────────
+def test_a_new_account_is_on_trial():
+    from app.services import plan as plan_mod
+
+    with patch.object(plan_mod, "get_supabase_admin",
+                      return_value=_profile(plan=FREE, premium_until=None,
+                                            trial_ends_at=_in(7))):
+        assert plan_mod.current_plan(PID) == plan_mod.TRIAL
+
+
+def test_the_trial_opens_the_meal_plan():
+    """Tout l'intérêt de l'essai : faire vivre la fonctionnalité qu'un compte
+    gratuit ne verrait jamais."""
+    from app.services.plan import TRIAL, limit_of
+
+    assert limit_of(FREE, "meal_plan") == 0
+    assert limit_of(TRIAL, "meal_plan") > 0
+    assert limit_of(TRIAL, "meal_plan") == limit_of(PREMIUM, "meal_plan")
+
+
+def test_an_expired_trial_falls_back_to_free():
+    from app.services import plan as plan_mod
+
+    with patch.object(plan_mod, "get_supabase_admin",
+                      return_value=_profile(plan=FREE, premium_until=None,
+                                            trial_ends_at=_in(-1))):
+        assert plan_mod.current_plan(PID) == FREE
+
+
+def test_paying_wins_over_the_trial():
+    """Quelqu'un qui s'abonne pendant son essai est Premium, pas en essai —
+    sinon son abonnement semblerait sans effet."""
+    from app.services import plan as plan_mod
+
+    with patch.object(plan_mod, "get_supabase_admin",
+                      return_value=_profile(plan=PREMIUM, premium_until=_in(30),
+                                            trial_ends_at=_in(3))):
+        assert plan_mod.current_plan(PID) == PREMIUM
+
+
+def test_a_trial_user_can_still_subscribe(ec_keys):
+    """Le blocage 409 ne vise que les abonnés : refuser un essai reviendrait à
+    empêcher exactement la conversion qu'on cherche."""
+    from app.services.plan import TRIAL
+
+    with patch("app.services.plan.current_plan", return_value=TRIAL), \
+         patch("app.services.billing.create_checkout",
+               return_value="https://checkout.stripe.com/c/pay/xyz"):
+        resp = client.post("/billing/checkout", headers=auth(ec_keys), json={})
+
+    assert resp.status_code == 200
+
+
+def test_days_left_rounds_up():
+    """Le dernier jour doit afficher « 1 jour », pas « 0 »."""
+    from datetime import datetime, timedelta, timezone
+    from app.services.plan import trial_days_left
+
+    now = datetime.now(timezone.utc)
+    assert trial_days_left(now + timedelta(hours=2)) == 1
+    assert trial_days_left(now + timedelta(days=6, hours=23)) == 7
+    assert trial_days_left(now - timedelta(days=1)) == 0
+    assert trial_days_left(None) == 0
+
+
+def test_status_reports_the_trial_countdown(ec_keys):
+    from app.services.plan import TRIAL
+    from datetime import datetime, timedelta, timezone
+
+    with patch("app.services.plan.current_plan", return_value=TRIAL), \
+         patch("app.services.plan.trial_ends_at",
+               return_value=datetime.now(timezone.utc) + timedelta(days=4, hours=1)), \
+         patch("app.services.quota.usage_this_month", return_value={}):
+        body = client.get("/billing/status", headers=auth(ec_keys)).json()
+
+    assert body["plan"] == "trial"
+    assert body["trial_days_left"] == 5
+    assert body["limits"]["meal_plan"] > 0
+
+
+def test_the_refusal_reminds_an_expired_trial_of_what_it_lost(ec_keys):
+    from app.services.plan import PremiumRequired
+    from datetime import datetime, timedelta, timezone
+
+    with patch("app.quota_guard.quota.consume", side_effect=PremiumRequired("meal_plan")), \
+         patch("app.services.plan.trial_ends_at",
+               return_value=datetime.now(timezone.utc) - timedelta(days=1)):
+        detail = client.post("/meal-plan/generate", headers=auth(ec_keys),
+                             json={"week_start": "2026-10-05"}).json()["detail"]
+
+    assert "essai est terminé" in detail
+    assert "4,99" in detail

@@ -17,7 +17,7 @@ import {
   type ShoppingItem,
   type ShoppingListView,
 } from "@/lib/shopping";
-import { fetchBillingStatus } from "@/lib/billing";
+import { fetchBillingStatus, hasFullAccess } from "@/lib/billing";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { PremiumGate } from "@/components/PremiumGate";
 
@@ -42,7 +42,9 @@ export default function ShoppingList() {
 
   useEffect(() => {
     fetchBillingStatus()
-      .then((s) => setPremium(s.plan === "premium"))
+      // L'essai ouvre les mêmes fonctionnalités : le tester ici aussi,
+      // sinon un nouvel inscrit ne verrait jamais ce qu'on veut lui montrer.
+      .then((s) => setPremium(hasFullAccess(s)))
       .catch(() => setPremium(true)); // API injoignable : le serveur tranchera
   }, []);
 

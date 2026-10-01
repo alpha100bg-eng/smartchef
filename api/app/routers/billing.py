@@ -19,11 +19,13 @@ class CheckoutResponse(BaseModel):
 
 
 class StatusResponse(BaseModel):
-    plan: str
+    plan: str  # "free" | "trial" | "premium"
     price_eur: str
     limits: dict[str, int]
     used: dict[str, int]
     billing_available: bool
+    # Jours entiers restants d'essai, 0 hors essai.
+    trial_days_left: int = 0
 
 
 @router.get("/status", response_model=StatusResponse)
@@ -43,6 +45,11 @@ def billing_status(profile_id: str = Depends(get_profile_id)):
         },
         used=quota.usage_this_month(profile_id),
         billing_available=billing.configured(),
+        trial_days_left=(
+            plan_svc.trial_days_left(plan_svc.trial_ends_at(profile_id))
+            if current == plan_svc.TRIAL
+            else 0
+        ),
     )
 
 

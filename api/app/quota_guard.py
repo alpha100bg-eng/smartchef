@@ -23,13 +23,9 @@ LABELS = {
     "shopping": "listes de courses",
 }
 
-PREMIUM_MESSAGES = {
-    "meal_plan": (
-        f"Le plan de la semaine fait partie de Premium ({PREMIUM_PRICE_EUR} €/mois)."
-    ),
-    "shopping": (
-        f"La liste de courses fait partie de Premium ({PREMIUM_PRICE_EUR} €/mois)."
-    ),
+FEATURE_NAMES = {
+    "meal_plan": "Le plan de la semaine",
+    "shopping": "La liste de courses",
 }
 
 
@@ -37,11 +33,18 @@ def consume(profile_id: str, kind: str) -> None:
     """Consomme une unité de quota, ou lève la HTTPException qui convient."""
     try:
         quota.consume(profile_id, kind)
-    except PremiumRequired:
+    except PremiumRequired as exc:
+        # `trial_ends_at` est NOT NULL avec une valeur par défaut : tout compte
+        # a donc eu son essai, et être au palier gratuit signifie forcément
+        # qu'il est terminé. Inutile d'interroger la base pour le confirmer —
+        # et rappeler ce qu'on vient de perdre convertit mieux qu'une phrase
+        # générique.
+        nom = FEATURE_NAMES.get(exc.feature, "Cette fonctionnalité")
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail=PREMIUM_MESSAGES.get(
-                kind, f"Cette fonctionnalité fait partie de Premium ({PREMIUM_PRICE_EUR} €/mois)."
+            detail=(
+                f"Ton essai est terminé. {nom} reste disponible avec Premium "
+                f"({PREMIUM_PRICE_EUR} €/mois)."
             ),
         )
     except QuotaExceeded as exc:
