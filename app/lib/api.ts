@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { currentLang, t } from "./i18n";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL!;
 
@@ -11,7 +12,7 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
   } = await supabase.auth.getSession();
 
   if (!session) {
-    throw new Error("Session expirée — reconnecte-toi.");
+    throw new Error(t("error.session"));
   }
 
   let response: Response;
@@ -21,14 +22,16 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,
+        // Décide la langue des recettes, des rayons et des noms d'aliments
+        // renvoyés par l'IA. L'en-tête standard évite d'ajouter un champ à
+        // chaque corps de requête.
+        "Accept-Language": currentLang(),
         ...init.headers,
       },
     });
   } catch {
     // fetch only rejects on network-level failures (server down, no route)
-    throw new Error(
-      "Impossible de joindre le serveur. Vérifie que l'API est démarrée."
-    );
+    throw new Error(t("error.unreachable"));
   }
 
   if (!response.ok) {
@@ -41,9 +44,9 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
       // non-JSON body — fall through to the generic message
     }
     if (response.status === 401 || response.status === 403) {
-      throw new Error(detail || "Session expirée — reconnecte-toi.");
+      throw new Error(detail || t("error.session"));
     }
-    throw new Error(detail || `Le serveur a répondu ${response.status}.`);
+    throw new Error(detail || t("error.server", { code: response.status }));
   }
 
   return response.json();

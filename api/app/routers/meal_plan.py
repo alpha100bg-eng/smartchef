@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.deps import get_profile_id
+from app.lang import get_lang
 from app.models.meal_plan import (
     GenerateRequest,
     InstructionsRequest,
@@ -14,13 +15,17 @@ router = APIRouter(prefix="/meal-plan", tags=["meal-plan"])
 
 
 @router.post("/generate", response_model=MealPlanView)
-def generate(body: GenerateRequest, profile_id: str = Depends(get_profile_id)):
+def generate(
+    body: GenerateRequest,
+    profile_id: str = Depends(get_profile_id),
+    lang: str = Depends(get_lang),
+):
     """Generate + persist a weekly meal plan (F2) from the caller's inventory,
     profile, allergies and budget."""
     quota_guard.consume(profile_id, "meal_plan")
 
     try:
-        return meal_plan.generate_meal_plan(profile_id, body.week_start, body.budget)
+        return meal_plan.generate_meal_plan(profile_id, body.week_start, body.budget, lang)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -29,7 +34,11 @@ def generate(body: GenerateRequest, profile_id: str = Depends(get_profile_id)):
 
 
 @router.post("/instructions", response_model=InstructionsResponse)
-def instructions(body: InstructionsRequest, profile_id: str = Depends(get_profile_id)):
+def instructions(
+    body: InstructionsRequest,
+    profile_id: str = Depends(get_profile_id),
+    lang: str = Depends(get_lang),
+):
     """Rédiger la préparation d'une recette du plan, à la première ouverture.
 
     Le plan ne génère plus les préparations d'un bloc : elles pesaient ~74 %
@@ -44,7 +53,7 @@ def instructions(body: InstructionsRequest, profile_id: str = Depends(get_profil
 
     try:
         return InstructionsResponse(
-            instructions=meal_plan.recipe_instructions(profile_id, body.recipe_id)
+            instructions=meal_plan.recipe_instructions(profile_id, body.recipe_id, lang)
         )
     except LookupError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")

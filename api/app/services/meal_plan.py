@@ -11,6 +11,7 @@ from functools import lru_cache
 from anthropic import Anthropic
 
 from app.core.config import settings
+from app.lang import FR, output_clause
 from app.core.supabase_client import get_supabase_admin
 from app.models.meal_plan import (
     MealPlanEntryView,
@@ -62,7 +63,7 @@ def _client() -> Anthropic:
     return Anthropic(api_key=settings.anthropic_api_key, timeout=settings.ai_timeout_seconds, max_retries=2)
 
 
-def _generate(profile_id: str, week_start: str, budget: float | None) -> MealPlanGeneration:
+def _generate(profile_id: str, week_start: str, budget: float | None, lang: str = FR) -> MealPlanGeneration:
     context = load_context(profile_id)
     if budget is not None:
         context["budget_weekly"] = budget
@@ -77,7 +78,7 @@ def _generate(profile_id: str, week_start: str, budget: float | None) -> MealPla
         # est généré — donc autant garder une marge large : 12 000 laisse 76 %
         # de réserve, là où 16 000 était réellement atteint avant le découpage.
         max_tokens=12000,
-        system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
+        system=[{"type": "text", "text": SYSTEM_PROMPT + output_clause(lang), "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": user_content}],
         output_format=MealPlanGeneration,
     )
@@ -201,7 +202,7 @@ def _view(profile_id: str, plan_id: str) -> MealPlanView:
     )
 
 
-def recipe_instructions(profile_id: str, recipe_id: str) -> str:
+def recipe_instructions(profile_id: str, recipe_id: str, lang: str = FR) -> str:
     """Rédige la préparation d'une recette du plan, à la première ouverture.
 
     Le résultat est écrit en base : rouvrir la même recette ne coûte plus rien.
@@ -238,7 +239,7 @@ def recipe_instructions(profile_id: str, recipe_id: str) -> str:
     resp = _client().messages.parse(
         model=MEAL_PLAN_MODEL,
         max_tokens=1500,
-        system=[{"type": "text", "text": STEPS_PROMPT, "cache_control": {"type": "ephemeral"}}],
+        system=[{"type": "text", "text": STEPS_PROMPT + output_clause(lang), "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
         output_format=RecipeSteps,
     )
@@ -251,8 +252,9 @@ def recipe_instructions(profile_id: str, recipe_id: str) -> str:
     return text
 
 
-def generate_meal_plan(profile_id: str, week_start: str, budget: float | None) -> MealPlanView:
-    gen = _generate(profile_id, week_start, budget)
+def generate_meal_plan(profile_id: str, week_start: str, budget: float | None,
+                       lang: str = FR) -> MealPlanView:
+    gen = _generate(profile_id, week_start, budget, lang)
     plan_id = _persist(profile_id, week_start, budget, gen)
     return _view(profile_id, plan_id)
 

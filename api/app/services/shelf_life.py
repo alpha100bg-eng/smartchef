@@ -16,6 +16,7 @@ from anthropic import Anthropic
 from pydantic import BaseModel, Field
 
 from app.core.config import settings
+from app.lang import FR, output_clause
 
 SHELF_LIFE_MODEL = "claude-haiku-4-5"
 
@@ -69,7 +70,7 @@ def to_expiry_dates(
     return dates
 
 
-def estimate(names: list[str]) -> dict[str, str | None]:
+def estimate(names: list[str], lang: str = FR) -> dict[str, str | None]:
     """Nom d'aliment -> date de péremption estimée (ISO), ou None.
 
     Les noms absents de la réponse sont simplement absents du dictionnaire :
@@ -83,7 +84,7 @@ def estimate(names: list[str]) -> dict[str, str | None]:
         system=[
             {
                 "type": "text",
-                "text": SYSTEM_PROMPT,
+                "text": SYSTEM_PROMPT + output_clause(lang),
                 "cache_control": {"type": "ephemeral"},
             }
         ],

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.deps import get_profile_id
+from app.lang import get_lang
 from app.models.inventory import FromPhotoRequest, VisionResult
 from app import quota_guard
 from app.services import shelf_life, vision
@@ -26,6 +27,7 @@ class ShelfLifeResponse(BaseModel):
 def inventory_from_photo(
     body: FromPhotoRequest,
     profile_id: str = Depends(get_profile_id),
+    lang: str = Depends(get_lang),
 ):
     """Detect food items from a fridge photo (F1). Returns items for the user to
     review and correct — nothing is written to the DB here.
@@ -40,7 +42,7 @@ def inventory_from_photo(
     quota_guard.consume(profile_id, "vision")
 
     try:
-        return vision.detect_from_storage_path(body.storage_path)
+        return vision.detect_from_storage_path(body.storage_path, lang)
     except Exception as exc:  # signing failure, vision API error, parse error
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -52,6 +54,7 @@ def inventory_from_photo(
 def estimate_shelf_life(
     body: ShelfLifeRequest,
     profile_id: str = Depends(get_profile_id),
+    lang: str = Depends(get_lang),
 ):
     """Estimer une péremption pour des aliments désignés par leur nom (F1).
 
@@ -65,7 +68,7 @@ def estimate_shelf_life(
     quota_guard.consume(profile_id, "shopping")
 
     try:
-        return ShelfLifeResponse(expiry_dates=shelf_life.estimate(body.names))
+        return ShelfLifeResponse(expiry_dates=shelf_life.estimate(body.names, lang))
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

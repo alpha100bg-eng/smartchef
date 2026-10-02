@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.deps import get_profile_id
+from app.lang import get_lang
 from app.models.recipe import Recipe, RecipeDetailRequest, SearchRequest, SearchResult
 from app import quota_guard
 from app.services import search
@@ -12,6 +13,7 @@ router = APIRouter(tags=["search"])
 def search_endpoint(
     body: SearchRequest,
     profile_id: str = Depends(get_profile_id),
+    lang: str = Depends(get_lang),
 ):
     """Natural-language recipe search (F5). Uses the caller's inventory + profile
     (diet, allergies) server-side to keep results coherent and safe."""
@@ -23,7 +25,7 @@ def search_endpoint(
     quota_guard.consume(profile_id, "search")
 
     try:
-        return search.search_recipes(profile_id, query)
+        return search.search_recipes(profile_id, query, lang)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -35,13 +37,16 @@ def search_endpoint(
 def recipe_detail_endpoint(
     body: RecipeDetailRequest,
     profile_id: str = Depends(get_profile_id),
+    lang: str = Depends(get_lang),
 ):
     """Full recipe for one search result, generated when the user opens it.
     Keeps the listing fast and only bills recipes that are actually read."""
     quota_guard.consume(profile_id, "search")
 
     try:
-        return search.recipe_detail(profile_id, body.title.strip(), body.teaser.strip())
+        return search.recipe_detail(
+            profile_id, body.title.strip(), body.teaser.strip(), lang
+        )
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,

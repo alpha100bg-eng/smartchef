@@ -11,6 +11,7 @@ from functools import lru_cache
 from anthropic import Anthropic
 
 from app.core.config import settings
+from app.lang import FR, output_clause
 from app.core.supabase_client import get_supabase_admin
 from app.models.recipe import Recipe, RecipeSummary, SearchResult
 
@@ -83,7 +84,7 @@ def load_context(profile_id: str) -> dict:
     }
 
 
-def search_recipes(profile_id: str, query: str) -> SearchResult:
+def search_recipes(profile_id: str, query: str, lang: str = FR) -> SearchResult:
     context = load_context(profile_id)
     user_content = (
         f"Requête : {query}\n\n"
@@ -96,7 +97,7 @@ def search_recipes(profile_id: str, query: str) -> SearchResult:
         system=[
             {
                 "type": "text",
-                "text": SYSTEM_PROMPT,
+                "text": SYSTEM_PROMPT + output_clause(lang),
                 "cache_control": {"type": "ephemeral"},
             }
         ],
@@ -106,7 +107,7 @@ def search_recipes(profile_id: str, query: str) -> SearchResult:
     return response.parsed_output
 
 
-def recipe_detail(profile_id: str, title: str, teaser: str = "") -> Recipe:
+def recipe_detail(profile_id: str, title: str, teaser: str = "", lang: str = FR) -> Recipe:
     """Generate the full recipe for one title, on demand. Keeps the listing
     fast and means we only pay for recipes the user actually opens."""
     context = load_context(profile_id)
@@ -121,7 +122,7 @@ def recipe_detail(profile_id: str, title: str, teaser: str = "") -> Recipe:
         system=[
             {
                 "type": "text",
-                "text": DETAIL_PROMPT,
+                "text": DETAIL_PROMPT + output_clause(lang),
                 "cache_control": {"type": "ephemeral"},
             }
         ],

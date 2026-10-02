@@ -13,6 +13,7 @@ from functools import lru_cache
 from anthropic import Anthropic
 
 from app.core.config import settings
+from app.lang import FR, output_clause
 from app.core.supabase_client import get_supabase_admin
 from app.models.shopping import ReconcileResult, ShoppingItem, ShoppingListView
 from app.services.text_match import layer1_covered, normalize
@@ -74,7 +75,7 @@ def _aggregate_ingredients(admin, meal_plan_id: str) -> list[dict]:
     return list(agg.values())
 
 
-def _reconcile_with_haiku(candidates: list[dict], inventory_names: list[str]) -> ReconcileResult:
+def _reconcile_with_haiku(candidates: list[dict], inventory_names: list[str], lang: str = FR) -> ReconcileResult:
     import json
 
     payload = {
@@ -84,14 +85,14 @@ def _reconcile_with_haiku(candidates: list[dict], inventory_names: list[str]) ->
     resp = _client().messages.parse(
         model=RECONCILE_MODEL,
         max_tokens=2000,
-        system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
+        system=[{"type": "text", "text": SYSTEM_PROMPT + output_clause(lang), "cache_control": {"type": "ephemeral"}}],
         messages=[{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
         output_format=ReconcileResult,
     )
     return resp.parsed_output
 
 
-def build_from_plan(profile_id: str, meal_plan_id: str) -> ShoppingListView:
+def build_from_plan(profile_id: str, meal_plan_id: str, lang: str = FR) -> ShoppingListView:
     admin = get_supabase_admin()
 
     plan = admin.table("meal_plans").select("id, profile_id").eq("id", meal_plan_id).single().execute()
@@ -116,7 +117,7 @@ def build_from_plan(profile_id: str, meal_plan_id: str) -> ShoppingListView:
     # Layer 2 — Haiku: conservative reconciliation + aisle + price
     reco_by_name: dict[str, object] = {}
     if candidates:
-        result = _reconcile_with_haiku(candidates, inventory_names)
+        result = _reconcile_with_haiku(candidates, inventory_names, lang)
         reco_by_name = {normalize(r.name): r for r in result.items}
 
     buy: list[ShoppingItem] = []

@@ -10,6 +10,7 @@ from functools import lru_cache
 from anthropic import Anthropic
 
 from app.core.config import settings
+from app.lang import FR, output_clause
 from app.core.supabase_client import get_supabase_admin
 from app.models.inventory import VisionResult
 
@@ -89,7 +90,7 @@ def _signed_url(storage_path: str) -> str:
     return url
 
 
-def detect_from_storage_path(storage_path: str) -> VisionResult:
+def detect_from_storage_path(storage_path: str, lang: str = FR) -> VisionResult:
     """Sign a short-lived URL for the photo, run Sonnet 5 vision, return the
     detected items. Does NOT write to the DB — the user reviews first."""
     url = _signed_url(storage_path)
@@ -99,7 +100,7 @@ def detect_from_storage_path(storage_path: str) -> VisionResult:
         system=[
             {
                 "type": "text",
-                "text": SYSTEM_PROMPT,
+                "text": SYSTEM_PROMPT + output_clause(lang),
                 "cache_control": {"type": "ephemeral"},
             }
         ],
