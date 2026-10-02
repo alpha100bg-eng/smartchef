@@ -6,6 +6,13 @@
 // Suites that care about Supabase behaviour still declare their own
 // jest.mock("@/lib/supabase", ...), which takes precedence over this one.
 
+// AsyncStorage n'a pas de module natif sous jsdom. Le simulacre fourni par la
+// bibliothèque suffit : i18n l'utilise pour mémoriser la langue, et il est
+// désormais importé indirectement par presque tous les écrans.
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest/async-storage-mock")
+);
+
 const noop = () => Promise.resolve({ data: null, error: null });
 
 jest.mock("@/lib/supabase", () => ({

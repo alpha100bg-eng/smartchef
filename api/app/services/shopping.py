@@ -39,7 +39,7 @@ def _client() -> Anthropic:
     return Anthropic(api_key=settings.anthropic_api_key, timeout=settings.ai_timeout_seconds, max_retries=2)
 
 
-def _aggregate_ingredients(admin, meal_plan_id: str) -> list[dict]:
+def _aggregate_ingredients(admin, meal_plan_id: str, lang: str = FR) -> list[dict]:
     """Sum ingredients across every scheduled entry (a recipe used N times counts
     N times). Group by (normalized name, unit); keep first-seen display name."""
     entries = (
@@ -61,7 +61,7 @@ def _aggregate_ingredients(admin, meal_plan_id: str) -> list[dict]:
             )
             ingredients_by_recipe[rid] = res.data or []
         for ing in ingredients_by_recipe[rid]:
-            key = (normalize(ing["name"]), (ing.get("unit") or "").lower())
+            key = (normalize(ing["name"], lang), (ing.get("unit") or "").lower())
             if key not in agg:
                 agg[key] = {
                     "name": ing["name"],
@@ -99,7 +99,7 @@ def build_from_plan(profile_id: str, meal_plan_id: str, lang: str = FR) -> Shopp
     if not plan.data or plan.data["profile_id"] != profile_id:
         raise LookupError("meal plan not found")
 
-    aggregated = _aggregate_ingredients(admin, meal_plan_id)
+    aggregated = _aggregate_ingredients(admin, meal_plan_id, lang)
     inventory = (
         admin.table("inventory_items").select("name").eq("profile_id", profile_id).execute()
     )
@@ -109,7 +109,7 @@ def build_from_plan(profile_id: str, meal_plan_id: str, lang: str = FR) -> Shopp
     already_in_fridge: list[str] = []
     candidates: list[dict] = []
     for ing in aggregated:
-        if layer1_covered(ing["name"], inventory_names):
+        if layer1_covered(ing["name"], inventory_names, lang):
             already_in_fridge.append(ing["name"])
         else:
             candidates.append(ing)
@@ -118,11 +118,11 @@ def build_from_plan(profile_id: str, meal_plan_id: str, lang: str = FR) -> Shopp
     reco_by_name: dict[str, object] = {}
     if candidates:
         result = _reconcile_with_haiku(candidates, inventory_names, lang)
-        reco_by_name = {normalize(r.name): r for r in result.items}
+        reco_by_name = {normalize(r.name, lang): r for r in result.items}
 
     buy: list[ShoppingItem] = []
     for ing in candidates:
-        r = reco_by_name.get(normalize(ing["name"]))
+        r = reco_by_name.get(normalize(ing["name"], lang))
         if r is not None and r.already_in_inventory:
             already_in_fridge.append(ing["name"])
             continue

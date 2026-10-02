@@ -1,28 +1,72 @@
 import { normalize, sameFood } from "../normalize";
 
-// Mirrors api/tests/test_text_match.py — the two must agree.
+// Jumeau de api/tests/test_text_match.py et test_text_match_en.py — les trois
+// doivent s'accorder.
+//
+// La langue est passée explicitement : sans cela ces tests dépendraient de
+// `navigator.language` de l'environnement de test, et basculeraient en
+// silence le jour où il change.
 
-test("normalises case, accents and plain plurals", () => {
-  expect(normalize("Tomates")).toBe("tomate");
-  expect(normalize("OIGNONS")).toBe("oignon");
-  expect(normalize("  Poivron   Rouge ")).toBe("poivron rouge");
+describe("français", () => {
+  test("casse, accents et pluriels simples", () => {
+    expect(normalize("Tomates", "fr")).toBe("tomate");
+    expect(normalize("OIGNONS", "fr")).toBe("oignon");
+    expect(normalize("  Poivron   Rouge ", "fr")).toBe("poivron rouge");
+  });
+
+  test("les invariables sont laissés tels quels", () => {
+    expect(normalize("riz", "fr")).toBe("riz");
+    expect(normalize("ananas", "fr")).toBe("ananas");
+    expect(normalize("jus", "fr")).toBe("jus");
+  });
+
+  test("-eaux avant -aux", () => {
+    expect(normalize("gâteaux", "fr")).toBe("gateau");
+    expect(normalize("chevaux", "fr")).toBe("cheval");
+  });
+
+  test("ne rapproche que les paires évidentes", () => {
+    expect(sameFood("Tomates", "tomate", "fr")).toBe(true);
+    expect(sameFood("lait", "lait d'amande", "fr")).toBe(false);
+    expect(sameFood("", "tomate", "fr")).toBe(false);
+  });
 });
 
-test("leaves French invariables alone", () => {
-  expect(normalize("riz")).toBe("riz");
-  expect(normalize("ananas")).toBe("ananas");
-  expect(normalize("jus")).toBe("jus");
+describe("anglais", () => {
+  test.each([
+    ["tomatoes", "tomato"],
+    ["potatoes", "potato"],
+    ["berries", "berry"],
+    ["boxes", "box"],
+    ["dishes", "dish"],
+    ["carrots", "carrot"],
+    ["leaves", "leaf"],
+    ["knives", "knife"],
+  ])("%s → %s", (pluriel, singulier) => {
+    expect(normalize(pluriel, "en")).toBe(normalize(singulier, "en"));
+  });
+
+  test("les invariables sont laissés tels quels", () => {
+    for (const mot of ["rice", "fish", "bread", "pasta", "lettuce"]) {
+      expect(normalize(mot, "en")).toBe(mot);
+    }
+  });
+
+  test("un double s n'est pas une marque de pluriel", () => {
+    // Retirer le « s » de « glass » casserait toute correspondance.
+    expect(normalize("glass", "en")).toBe("glass");
+    expect(normalize("grass", "en")).toBe("grass");
+  });
+
+  test("ne rapproche que les paires évidentes", () => {
+    expect(sameFood("Tomatoes", "tomato", "en")).toBe(true);
+    expect(sameFood("almond milk", "milk", "en")).toBe(false);
+  });
 });
 
-test("handles -eaux before -aux", () => {
-  expect(normalize("gâteaux")).toBe("gateau");
-  expect(normalize("chevaux")).toBe("cheval");
-});
-
-test("matches only obvious pairs", () => {
-  expect(sameFood("Tomates", "tomate")).toBe(true);
-  expect(sameFood("RIZ", "riz")).toBe(true);
-  // Variants must NOT match — removing the wrong food is worse than missing one.
-  expect(sameFood("lait", "lait d'amande")).toBe(false);
-  expect(sameFood("oignon", "oignon nouveau")).toBe(false);
+test("chaque langue casserait les mots de l'autre", () => {
+  // La raison d'être du découpage par langue.
+  expect(normalize("potatoes", "fr")).not.toBe(normalize("potato", "fr"));
+  expect(normalize("potatoes", "en")).toBe(normalize("potato", "en"));
+  expect(normalize("gâteaux", "fr")).toBe(normalize("gâteau", "fr"));
 });
