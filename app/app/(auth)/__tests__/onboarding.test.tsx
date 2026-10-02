@@ -70,15 +70,18 @@ test("on peut entrer sans rien renseigner", async () => {
   expect(mockInsert).not.toHaveBeenCalled();
 }, 20000);
 
-test("le régime se choisit en un appui", async () => {
+test("le régime se choisit en un appui et s'enregistre dans une langue stable", async () => {
   const { getByText } = render(<Onboarding />);
   allerAuxQuestions(getByText);
 
   fireEvent.press(getByText("Végétarien"));
   fireEvent.press(getByText("Scanner mon frigo"));
 
+  // La valeur stockée reste un mot invariable : elle part dans le contexte
+  // envoyé à l'IA, et un `diet_type` qui changerait de langue selon
+  // l'appareil rendrait les anciens profils incohérents.
   await waitFor(() =>
-    expect(mockUpdate).toHaveBeenCalledWith("profiles", { diet_type: "végétarien" })
+    expect(mockUpdate).toHaveBeenCalledWith("profiles", { diet_type: "vegetarian" })
   );
 }, 20000);
 

@@ -20,15 +20,16 @@ import {
   type MealPlanEntry,
 } from "@/lib/mealPlan";
 import { fetchBillingStatus, hasFullAccess } from "@/lib/billing";
+import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { CookedButton } from "@/components/CookedButton";
 import { PremiumGate } from "@/components/PremiumGate";
 
 const SLOT_LABELS: Record<string, string> = {
-  breakfast: "Petit-déj",
-  lunch: "Déjeuner",
-  dinner: "Dîner",
-  snack: "Collation",
+  breakfast: t("plan.breakfast"),
+  lunch: t("plan.lunch"),
+  dinner: t("plan.dinner"),
+  snack: t("plan.snack"),
 };
 const SLOT_ICONS: Record<string, React.ComponentProps<typeof Ionicons>["name"]> = {
   breakfast: "sunny-outline",
@@ -44,6 +45,8 @@ function dayLabel(iso: string): string {
 }
 
 export default function MealPlan() {
+  // Redessine cet ecran quand la langue change.
+  useLang();
   const [plan, setPlan] = useState<MealPlanView | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +91,7 @@ export default function MealPlan() {
       setPlan(await generateMealPlan(currentWeekStart(), valide));
       if (valide) void rememberBudget(valide);
     } catch (e: any) {
-      setError(e.message ?? "Échec de la génération");
+      setError(e.message ?? t("plan.errGenerate"));
     } finally {
       setLoading(false);
     }
@@ -110,7 +113,7 @@ export default function MealPlan() {
       const text = await fetchInstructions(entry.recipe_id);
       setSteps((prev) => ({ ...prev, [entry.recipe_id]: text }));
     } catch (e: any) {
-      setError(e.message ?? "Impossible de charger la préparation");
+      setError(e.message ?? t("plan.errSteps"));
     } finally {
       setStepsLoading(null);
     }
@@ -129,11 +132,11 @@ export default function MealPlan() {
   if (premium === false) {
     return (
       <View style={styles.screen}>
-        <Text style={styles.title}>Ma semaine</Text>
+        <Text style={styles.title}>{t("plan.title")}</Text>
         <PremiumGate
           icon="calendar-outline"
-          title="Sept jours, zéro question"
-          pitch="Le plan de la semaine compose tes repas à partir de ton frigo, ton budget et ton régime. C'est la fonctionnalité la plus gourmande de l'app — elle fait partie de Premium."
+          title={t("plan.emptyTitle")}
+          pitch={t("premium.planLocked")}
         />
       </View>
     );
@@ -141,7 +144,7 @@ export default function MealPlan() {
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.title}>Ma semaine</Text>
+      <Text style={styles.title}>{t("plan.title")}</Text>
 
       {plan && (
         <View style={[styles.costCard, overBudget && styles.costCardOver]}>
@@ -161,15 +164,15 @@ export default function MealPlan() {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
-          <Text style={styles.muted}>Génération du plan…</Text>
-          <Text style={styles.mutedSmall}>Une trentaine de secondes.</Text>
+          <Text style={styles.muted}>{t("plan.generating")}</Text>
+          <Text style={styles.mutedSmall}>{t("plan.wait")}</Text>
         </View>
       ) : !plan ? (
         <View style={styles.center}>
           <View style={styles.emptyIcon}>
             <Ionicons name="calendar-outline" size={32} color={colors.primary} />
           </View>
-          <Text style={styles.emptyTitle}>Sept jours, zéro question</Text>
+          <Text style={styles.emptyTitle}>{t("plan.emptyTitle")}</Text>
           <Text style={styles.emptyBody}>
             Je compose ta semaine à partir de ton frigo, ton budget et ton régime.
           </Text>
@@ -208,7 +211,7 @@ export default function MealPlan() {
                           <View style={styles.detail}>
                             {e.recipe.ingredients?.length ? (
                               <>
-                                <Text style={styles.sectionTitle}>Ingrédients</Text>
+                                <Text style={styles.sectionTitle}>{t("search.ingredients")}</Text>
                                 {e.recipe.ingredients.map((ing, j) => (
                                   <View key={j} style={styles.ingRow}>
                                     <Text style={styles.ingName}>{ing.name}</Text>
@@ -219,7 +222,7 @@ export default function MealPlan() {
                                 ))}
                               </>
                             ) : null}
-                            <Text style={styles.sectionTitle}>Préparation</Text>
+                            <Text style={styles.sectionTitle}>{t("search.steps")}</Text>
                             {stepsLoading === e.recipe_id ? (
                               <View style={styles.stepsLoading}>
                                 <ActivityIndicator
@@ -234,7 +237,7 @@ export default function MealPlan() {
                               <Text style={styles.step}>
                                 {e.recipe.instructions ||
                                   steps[e.recipe_id] ||
-                                  "Préparation indisponible."}
+                                  t("plan.noSteps")}
                               </Text>
                             )}
                             <CookedButton
@@ -258,12 +261,12 @@ export default function MealPlan() {
         <Ionicons name="wallet-outline" size={17} color={colors.textMuted} />
         <TextInput
           style={styles.budgetInput}
-          placeholder="Budget de la semaine (optionnel)"
+          placeholder={t("plan.budget")}
           placeholderTextColor={colors.textMuted}
           keyboardType="numeric"
           value={budget}
           onChangeText={setBudget}
-          accessibilityLabel="Budget hebdomadaire en euros"
+          accessibilityLabel={t("plan.budgetLabel")}
         />
         {budget.trim() ? <Text style={styles.budgetUnit}>€</Text> : null}
       </View>
@@ -271,7 +274,7 @@ export default function MealPlan() {
       <Pressable style={styles.primaryBtn} onPress={generate} disabled={loading}>
         <Ionicons name="sparkles-outline" size={18} color={colors.onPrimary} />
         <Text style={styles.primaryBtnText}>
-          {plan ? "Regénérer la semaine" : "Générer ma semaine"}
+          {plan ? t("plan.regenerate") : t("plan.generate")}
         </Text>
       </Pressable>
     </View>

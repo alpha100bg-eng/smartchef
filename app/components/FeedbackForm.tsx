@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import { sendFeedback, hasGivenFeedback } from "@/lib/feedback";
+import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 /**
@@ -20,6 +21,8 @@ import { colors, radius, spacing, font, shadow } from "@/lib/theme";
  * produit une liste de travaux exploitable.
  */
 export function FeedbackForm() {
+  // Redessine cet ecran quand la langue change.
+  useLang();
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [liked, setLiked] = useState("");
@@ -40,7 +43,7 @@ export function FeedbackForm() {
       await sendFeedback({ rating, liked, missing });
       setSent(true);
     } catch (e: any) {
-      setError(e.message ?? "Envoi impossible");
+      setError(e.message ?? t("feedback.errSend"));
     } finally {
       setSending(false);
     }
@@ -50,7 +53,7 @@ export function FeedbackForm() {
     return (
       <View style={styles.thanks}>
         <Ionicons name="heart" size={17} color={colors.primaryDark} />
-        <Text style={styles.thanksText}>Merci — c'est noté.</Text>
+        <Text style={styles.thanksText}>{t("feedback.thanks")}</Text>
       </View>
     );
   }
@@ -60,11 +63,11 @@ export function FeedbackForm() {
       <Pressable
         style={styles.trigger}
         onPress={() => setOpen(true)}
-        accessibilityLabel="Donner mon avis sur l'application"
+        accessibilityLabel={t("feedback.label")}
       >
         <Ionicons name="chatbubble-ellipses-outline" size={17} color={colors.primaryDark} />
         <Text style={styles.triggerText}>
-          {already ? "Donner un nouvel avis" : "Donner mon avis"}
+          {already ? t("feedback.openAgain") : t("feedback.open")}
         </Text>
       </Pressable>
     );
@@ -72,8 +75,8 @@ export function FeedbackForm() {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.heading}>Ton avis</Text>
-      <Text style={styles.hint}>Sois franc, c'est plus utile que d'être gentil.</Text>
+      <Text style={styles.heading}>{t("feedback.title")}</Text>
+      <Text style={styles.hint}>{t("feedback.hint")}</Text>
 
       <View style={styles.stars}>
         {[1, 2, 3, 4, 5].map((n) => (
@@ -94,7 +97,7 @@ export function FeedbackForm() {
 
       <TextInput
         style={styles.input}
-        placeholder="Qu'est-ce qui t'a plu ?"
+        placeholder={t("feedback.liked")}
         placeholderTextColor={colors.textMuted}
         value={liked}
         onChangeText={setLiked}
@@ -102,7 +105,7 @@ export function FeedbackForm() {
       />
       <TextInput
         style={styles.input}
-        placeholder="Qu'est-ce qui t'a manqué ou agacé ?"
+        placeholder={t("feedback.missing")}
         placeholderTextColor={colors.textMuted}
         value={missing}
         onChangeText={setMissing}
@@ -120,12 +123,12 @@ export function FeedbackForm() {
           <ActivityIndicator color={colors.onPrimary} />
         ) : (
           <Text style={styles.sendBtnText}>
-            {rating === 0 ? "Choisis une note" : "Envoyer"}
+            {rating === 0 ? t("feedback.needRating") : t("common.send")}
           </Text>
         )}
       </Pressable>
       <Pressable onPress={() => setOpen(false)}>
-        <Text style={styles.cancel}>Plus tard</Text>
+        <Text style={styles.cancel}>{t("common.later")}</Text>
       </Pressable>
     </View>
   );

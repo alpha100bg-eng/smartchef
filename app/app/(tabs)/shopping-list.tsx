@@ -18,19 +18,43 @@ import {
   type ShoppingListView,
 } from "@/lib/shopping";
 import { fetchBillingStatus, hasFullAccess } from "@/lib/billing";
+import { t, useLang } from "@/lib/i18n";
+import { STRINGS } from "@/lib/strings";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { PremiumGate } from "@/components/PremiumGate";
 
-const AISLE_ICONS: Record<string, React.ComponentProps<typeof Ionicons>["name"]> = {
-  "Fruits et légumes": "nutrition-outline",
-  "Produits laitiers": "water-outline",
-  "Viande et poisson": "fish-outline",
-  Épicerie: "basket-outline",
-  Surgelés: "snow-outline",
-  Boulangerie: "pizza-outline",
-};
+/**
+ * Icône par rayon.
+ *
+ * Le nom du rayon est écrit par l'IA dans la langue de l'utilisateur. La table
+ * reconnaît donc les deux libellés : elle est construite depuis le
+ * dictionnaire plutôt que recopiée, ce qui évite qu'une retouche de
+ * traduction fasse disparaître les icônes en silence.
+ */
+type IconName = React.ComponentProps<typeof Ionicons>["name"];
+
+const AISLE_ICONS: Record<string, IconName> = Object.fromEntries(
+  (
+    [
+      ["aisle.produce", "nutrition-outline"],
+      ["aisle.dairy", "water-outline"],
+      ["aisle.meat", "fish-outline"],
+      ["aisle.grocery", "basket-outline"],
+      ["aisle.frozen", "snow-outline"],
+      ["aisle.bakery", "pizza-outline"],
+    ] as const
+  ).flatMap(([cle, icone]) =>
+    (["fr", "en"] as const).map((l) => [STRINGS[l][cle].toLowerCase(), icone])
+  )
+);
+
+function aisleIcon(nom: string): IconName {
+  return AISLE_ICONS[nom.trim().toLowerCase()] ?? "pricetag-outline";
+}
 
 export default function ShoppingList() {
+  // Redessine cet ecran quand la langue change.
+  useLang();
   const [list, setList] = useState<ShoppingListView | null>(null);
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [inFridge, setInFridge] = useState<string[]>([]);
@@ -54,7 +78,7 @@ export default function ShoppingList() {
     try {
       const planId = await latestMealPlanId();
       if (!planId) {
-        setError("Génère d'abord un plan de repas.");
+        setError(t("shopping.needPlan"));
         return;
       }
       const result = await buildFromPlan(planId);
@@ -62,7 +86,7 @@ export default function ShoppingList() {
       setItems(result.items);
       setInFridge(result.already_in_fridge);
     } catch (e: any) {
-      setError(e.message ?? "Échec de la génération");
+      setError(e.message ?? t("plan.errGenerate"));
     } finally {
       setLoading(false);
     }
@@ -83,7 +107,7 @@ export default function ShoppingList() {
       setItems((prev) =>
         prev.map((it, idx) => (idx === i ? { ...it, checked: !next } : it))
       );
-      setError("La coche n'a pas pu être enregistrée.");
+      setError(t("shopping.errCheck"));
     }
   }
 
@@ -97,7 +121,7 @@ export default function ShoppingList() {
       // inviterait à les ranger deux fois.
       setItems((prev) => prev.filter((i) => !i.checked));
     } catch (e: any) {
-      setError(e.message ?? "Impossible de ranger les courses");
+      setError(e.message ?? t("shopping.errStore"));
     } finally {
       setStoring(false);
     }
@@ -111,7 +135,7 @@ export default function ShoppingList() {
         name,
         quantity: null,
         unit: null,
-        aisle: "À ranger",
+        aisle: t("shopping.toSort"),
         estimated_price: null,
         checked: false,
       },
@@ -121,7 +145,7 @@ export default function ShoppingList() {
 
   const byAisle: Record<string, { item: ShoppingItem; index: number }[]> = {};
   items.forEach((item, index) => {
-    const aisle = item.aisle || "Autres";
+    const aisle = item.aisle || t("aisle.other");
     (byAisle[aisle] ??= []).push({ item, index });
   });
   const aisles = Object.keys(byAisle).sort();
@@ -130,11 +154,11 @@ export default function ShoppingList() {
   if (premium === false) {
     return (
       <View style={styles.screen}>
-        <Text style={styles.title}>Mes courses</Text>
+        <Text style={styles.title}>{t("shopping.title")}</Text>
         <PremiumGate
           icon="cart-outline"
-          title="Rien à racheter en double"
-          pitch="La liste se construit à partir de ton plan de repas, rangée par rayon, en retirant ce que tu as déjà. Elle fait partie de Premium, comme le plan."
+          title={t("shopping.emptyTitle")}
+          pitch={t("premium.shoppingLocked")}
         />
       </View>
     );
@@ -142,20 +166,20 @@ export default function ShoppingList() {
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.title}>Mes courses</Text>
+      <Text style={styles.title}>{t("shopping.title")}</Text>
 
       {list && (
         <View style={styles.summary}>
           <View style={styles.summaryBlock}>
             <Text style={styles.summaryValue}>~{list.estimated_total ?? 0} €</Text>
-            <Text style={styles.summaryLabel}>Estimation</Text>
+            <Text style={styles.summaryLabel}>{t("shopping.estimate")}</Text>
           </View>
           <View style={styles.summaryDivider} />
           <View style={styles.summaryBlock}>
             <Text style={styles.summaryValue}>
               {done}/{items.length}
             </Text>
-            <Text style={styles.summaryLabel}>Cochés</Text>
+            <Text style={styles.summaryLabel}>{t("shopping.checked")}</Text>
           </View>
         </View>
       )}
@@ -164,14 +188,14 @@ export default function ShoppingList() {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
-          <Text style={styles.muted}>Construction de la liste…</Text>
+          <Text style={styles.muted}>{t("shopping.building")}</Text>
         </View>
       ) : !list ? (
         <View style={styles.center}>
           <View style={styles.emptyIcon}>
             <Ionicons name="cart-outline" size={32} color={colors.primary} />
           </View>
-          <Text style={styles.emptyTitle}>Rien à racheter en double</Text>
+          <Text style={styles.emptyTitle}>{t("shopping.emptyTitle")}</Text>
           <Text style={styles.emptyBody}>
             Je pars de ton plan de repas et je retire ce que tu as déjà.
           </Text>
@@ -182,7 +206,7 @@ export default function ShoppingList() {
             <View key={aisle} style={styles.aisleBlock}>
               <View style={styles.aisleHead}>
                 <Ionicons
-                  name={AISLE_ICONS[aisle] ?? "pricetag-outline"}
+                  name={aisleIcon(aisle)}
                   size={15}
                   color={colors.textSecondary}
                 />
@@ -194,7 +218,7 @@ export default function ShoppingList() {
                     key={index}
                     style={[styles.row, k > 0 && styles.rowBorder]}
                     onPress={() => toggle(index)}
-                    accessibilityLabel={`${item.checked ? "Décocher" : "Cocher"} ${item.name}`}
+                    accessibilityLabel={t(item.checked ? "shopping.uncheck" : "shopping.check", { name: item.name })}
                   >
                     <Ionicons
                       name={item.checked ? "checkbox" : "square-outline"}
@@ -218,12 +242,12 @@ export default function ShoppingList() {
 
           {inFridge.length > 0 && (
             <View style={styles.fridgeBlock}>
-              <Text style={styles.fridgeTitle}>Déjà dans ton frigo (à vérifier)</Text>
+              <Text style={styles.fridgeTitle}>{t("shopping.inFridge")}</Text>
               {inFridge.map((name) => (
                 <View key={name} style={styles.fridgeRow}>
                   <Text style={styles.fridgeName}>{name}</Text>
                   <Pressable onPress={() => readd(name)} hitSlop={8}>
-                    <Text style={styles.readd}>+ ajouter</Text>
+                    <Text style={styles.readd}>{t("shopping.readd")}</Text>
                   </Pressable>
                 </View>
               ))}
@@ -253,7 +277,7 @@ export default function ShoppingList() {
           <Ionicons name="file-tray-full-outline" size={18} color={colors.primaryDark} />
           <Text style={styles.secondaryBtnText}>
             {storing
-              ? "Rangement…"
+              ? t("shopping.storing")
               : `J'ai fait mes courses (${done} article${done > 1 ? "s" : ""})`}
           </Text>
         </Pressable>
@@ -262,7 +286,7 @@ export default function ShoppingList() {
       <Pressable style={styles.primaryBtn} onPress={generate} disabled={loading}>
         <Ionicons name="cart" size={18} color={colors.onPrimary} />
         <Text style={styles.primaryBtnText}>
-          {list ? "Regénérer la liste" : "Générer la liste"}
+          {list ? t("shopping.regenerate") : t("shopping.generate")}
         </Text>
       </Pressable>
     </View>

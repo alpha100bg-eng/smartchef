@@ -23,12 +23,15 @@ import {
   deleteSavedRecipe,
   type SavedRecipe,
 } from "@/lib/saved-recipes";
+import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { CookedButton } from "@/components/CookedButton";
 
-const SUGGESTIONS = ["Rapide ce soir", "Moins de 20 min", "Végétarien", "Avec mon frigo"];
+const SUGGESTIONS = [t("search.chip1"), t("search.chip2"), t("search.chip3"), t("search.chip4")];
 
 export default function Search() {
+  // Redessine cet ecran quand la langue change.
+  useLang();
   // `q` arrives from the expiry-alert deep link (smartchef://search?q=lait)
   const { q } = useLocalSearchParams<{ q?: string }>();
   const [query, setQuery] = useState(q ?? "");
@@ -66,7 +69,7 @@ export default function Search() {
       setSavedIds((prev) => ({ ...prev, [index]: id }));
       await loadSaved();
     } catch (e: any) {
-      setError(e.message ?? "Impossible de garder cette recette");
+      setError(e.message ?? t("search.errKeep"));
     } finally {
       setSavingIndex(null);
     }
@@ -82,7 +85,7 @@ export default function Search() {
       );
     } catch {
       setSaved(previous);
-      setError("Suppression impossible");
+      setError(t("inventory.errDelete"));
     }
   }
 
@@ -96,7 +99,7 @@ export default function Search() {
     try {
       setRecipes(await searchRecipes(text));
     } catch (e: any) {
-      setError(e.message ?? "Échec de la recherche");
+      setError(e.message ?? t("search.errSearch"));
     } finally {
       setLoading(false);
     }
@@ -115,7 +118,7 @@ export default function Search() {
       const full = await fetchRecipeDetail(r.title, r.teaser);
       setDetails((prev) => ({ ...prev, [index]: full }));
     } catch (e: any) {
-      setError(e.message ?? "Impossible de charger la recette");
+      setError(e.message ?? t("search.errDetail"));
       setExpanded(null);
     } finally {
       setDetailLoading(null);
@@ -133,14 +136,14 @@ export default function Search() {
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.title}>Qu'est-ce que je cuisine ?</Text>
+      <Text style={styles.title}>{t("search.title")}</Text>
 
       <View style={styles.searchRow}>
         <View style={styles.inputWrap}>
           <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
             style={styles.input}
-            placeholder="ex. italien ce soir, moins de 20 min…"
+            placeholder={t("search.placeholder")}
             placeholderTextColor={colors.textMuted}
             value={query}
             onChangeText={setQuery}
@@ -152,9 +155,9 @@ export default function Search() {
           style={styles.searchBtn}
           onPress={() => run()}
           disabled={loading}
-          accessibilityLabel="Lancer la recherche"
+          accessibilityLabel={t("search.run")}
         >
-          <Text style={styles.searchBtnText}>Chercher</Text>
+          <Text style={styles.searchBtnText}>{t("search.go")}</Text>
         </Pressable>
       </View>
 
@@ -180,7 +183,7 @@ export default function Search() {
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
-          <Text style={styles.muted}>Recherche de recettes…</Text>
+          <Text style={styles.muted}>{t("search.searching")}</Text>
         </View>
       ) : recipes === null ? (
         saved.length === 0 ? (
@@ -188,7 +191,7 @@ export default function Search() {
             <View style={styles.emptyIcon}>
               <Ionicons name="restaurant-outline" size={32} color={colors.primary} />
             </View>
-            <Text style={styles.emptyTitle}>Dis-moi ton envie</Text>
+            <Text style={styles.emptyTitle}>{t("search.emptyTitle")}</Text>
             <Text style={styles.emptyBody}>
               Je propose des recettes avec ce que tu as déjà.
             </Text>
@@ -196,7 +199,7 @@ export default function Search() {
         ) : (
           // Rouvrir une recette gardée ne coûte ni attente ni appel IA.
           <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-            <Text style={styles.savedHead}>Tes recettes gardées</Text>
+            <Text style={styles.savedHead}>{t("search.savedHead")}</Text>
             {saved.map((r) => {
               const open = openSaved === r.id;
               return (
@@ -217,21 +220,21 @@ export default function Search() {
 
                   <View style={styles.stats}>
                     {r.prep_time_min != null && (
-                      <Stat icon="time-outline" value={`${r.prep_time_min}`} label="min" />
+                      <Stat icon="time-outline" value={`${r.prep_time_min}`} label={t("search.minutes")} />
                     )}
                     {r.servings != null && (
-                      <Stat icon="people-outline" value={`${r.servings}`} label="pers." />
+                      <Stat icon="people-outline" value={`${r.servings}`} label={t("search.servings")} />
                     )}
                     <Stat
                       icon="basket-outline"
                       value={`${r.ingredients.length}`}
-                      label="ingrédients"
+                      label={t("search.ingredientsShort")}
                     />
                   </View>
 
                   {open && (
                     <View style={styles.detail}>
-                      <Text style={styles.sectionTitle}>Ingrédients</Text>
+                      <Text style={styles.sectionTitle}>{t("search.ingredients")}</Text>
                       {r.ingredients.map((ing, j) => (
                         <View key={j} style={styles.ingRow}>
                           <Text style={styles.ingName}>{ing.name}</Text>
@@ -240,7 +243,7 @@ export default function Search() {
                           </Text>
                         </View>
                       ))}
-                      <Text style={styles.sectionTitle}>Préparation</Text>
+                      <Text style={styles.sectionTitle}>{t("search.steps")}</Text>
                       {r.steps.map((s, j) => (
                         <View key={j} style={styles.stepRow}>
                           <View style={styles.stepNum}>
@@ -258,10 +261,10 @@ export default function Search() {
                       <Pressable
                         style={styles.forgetRow}
                         onPress={() => forget(r.id)}
-                        accessibilityLabel={`Retirer ${r.title} des recettes gardées`}
+                        accessibilityLabel={t("search.forgetLabel", { title: r.title })}
                       >
                         <Ionicons name="trash-outline" size={14} color={colors.danger} />
-                        <Text style={styles.forget}>Ne plus garder</Text>
+                        <Text style={styles.forget}>{t("search.forget")}</Text>
                       </Pressable>
                     </View>
                   )}
@@ -273,8 +276,8 @@ export default function Search() {
         )
       ) : recipes.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.emptyTitle}>Aucune recette trouvée</Text>
-          <Text style={styles.emptyBody}>Essaie de reformuler ta demande.</Text>
+          <Text style={styles.emptyTitle}>{t("search.noResult")}</Text>
+          <Text style={styles.emptyBody}>{t("search.rephrase")}</Text>
         </View>
       ) : (
         <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
@@ -296,16 +299,16 @@ export default function Search() {
 
                 <View style={styles.stats}>
                   {r.prep_time_min != null && (
-                    <Stat icon="time-outline" value={`${r.prep_time_min}`} label="min" />
+                    <Stat icon="time-outline" value={`${r.prep_time_min}`} label={t("search.minutes")} />
                   )}
                   {r.servings != null && (
-                    <Stat icon="people-outline" value={`${r.servings}`} label="pers." />
+                    <Stat icon="people-outline" value={`${r.servings}`} label={t("search.servings")} />
                   )}
                   {full && (
                     <Stat
                       icon="basket-outline"
                       value={`${full.ingredients.length}`}
-                      label="ingrédients"
+                      label={t("search.ingredientsShort")}
                     />
                   )}
                 </View>
@@ -322,13 +325,13 @@ export default function Search() {
                 {open && detailLoading === i && (
                   <View style={styles.detailLoading}>
                     <ActivityIndicator color={colors.primary} size="small" />
-                    <Text style={styles.muted}>Écriture de la recette…</Text>
+                    <Text style={styles.muted}>{t("search.writing")}</Text>
                   </View>
                 )}
 
                 {open && full && (
                   <View style={styles.detail}>
-                    <Text style={styles.sectionTitle}>Ingrédients</Text>
+                    <Text style={styles.sectionTitle}>{t("search.ingredients")}</Text>
                     {full.ingredients.map((ing, j) => (
                       <View key={j} style={styles.ingRow}>
                         <Text style={styles.ingName}>{ing.name}</Text>
@@ -337,7 +340,7 @@ export default function Search() {
                         </Text>
                       </View>
                     ))}
-                    <Text style={styles.sectionTitle}>Préparation</Text>
+                    <Text style={styles.sectionTitle}>{t("search.steps")}</Text>
                     {full.steps.map((s, j) => (
                       <View key={j} style={styles.stepRow}>
                         <View style={styles.stepNum}>
@@ -352,7 +355,7 @@ export default function Search() {
                       disabled={savingIndex === i || savedIds[i] != null}
                       accessibilityLabel={
                         savedIds[i] != null
-                          ? `${r.title} est gardée`
+                          ? t("search.keptLabel", { title: r.title })
                           : `Garder ${r.title}`
                       }
                     >
@@ -363,10 +366,10 @@ export default function Search() {
                       />
                       <Text style={styles.keepBtnText}>
                         {savedIds[i] != null
-                          ? "Gardée"
+                          ? t("search.kept")
                           : savingIndex === i
                             ? "…"
-                            : "Garder cette recette"}
+                            : t("search.keep")}
                       </Text>
                     </Pressable>
                     <CookedButton usesInventory={r.uses_inventory} />

@@ -3,6 +3,7 @@ import { View, Text, Pressable, ActivityIndicator, StyleSheet } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 
 import { matchFridgeItems, removeFinished, type FridgeMatch } from "@/lib/cook";
+import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font } from "@/lib/theme";
 
 type Props = {
@@ -12,10 +13,12 @@ type Props = {
 };
 
 /**
- * "J'ai cuisiné ça" — asks which fridge items were finished, then removes them.
+ * t("cooked.button") — asks which fridge items were finished, then removes them.
  * We ask rather than subtract quantities: see lib/cook.ts for why.
  */
 export function CookedButton({ usesInventory, onDone }: Props) {
+  // Redessine cet ecran quand la langue change.
+  useLang();
   const [matches, setMatches] = useState<FridgeMatch[] | null>(null);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState(false);
@@ -47,7 +50,7 @@ export function CookedButton({ usesInventory, onDone }: Props) {
       setDone(true);
       onDone?.();
     } catch (e: any) {
-      setError(e.message ?? "Suppression impossible");
+      setError(e.message ?? t("inventory.errDelete"));
     } finally {
       setBusy(false);
     }
@@ -57,7 +60,7 @@ export function CookedButton({ usesInventory, onDone }: Props) {
     return (
       <View style={styles.doneRow}>
         <Ionicons name="checkmark-circle" size={17} color={colors.primary} />
-        <Text style={styles.doneText}>Frigo mis à jour</Text>
+        <Text style={styles.doneText}>{t("cooked.done")}</Text>
       </View>
     );
   }
@@ -70,14 +73,14 @@ export function CookedButton({ usesInventory, onDone }: Props) {
           style={styles.cookBtn}
           onPress={open}
           disabled={busy}
-          accessibilityLabel="Marquer cette recette comme cuisinée"
+          accessibilityLabel={t("cooked.label")}
         >
           {busy ? (
             <ActivityIndicator color={colors.primaryDark} size="small" />
           ) : (
             <>
               <Ionicons name="restaurant" size={16} color={colors.primaryDark} />
-              <Text style={styles.cookBtnText}>J'ai cuisiné ça</Text>
+              <Text style={styles.cookBtnText}>{t("cooked.button")}</Text>
             </>
           )}
         </Pressable>
@@ -88,12 +91,12 @@ export function CookedButton({ usesInventory, onDone }: Props) {
   if (matches.length === 0) {
     return (
       <View style={styles.panel}>
-        <Text style={styles.panelTitle}>Rien à retirer</Text>
+        <Text style={styles.panelTitle}>{t("cooked.nothing")}</Text>
         <Text style={styles.panelBody}>
           Cette recette n'utilise aucun aliment identifié dans ton frigo.
         </Text>
         <Pressable onPress={() => setMatches(null)}>
-          <Text style={styles.cancel}>Fermer</Text>
+          <Text style={styles.cancel}>{t("common.close")}</Text>
         </Pressable>
       </View>
     );
@@ -101,7 +104,7 @@ export function CookedButton({ usesInventory, onDone }: Props) {
 
   return (
     <View style={styles.panel}>
-      <Text style={styles.panelTitle}>Qu'est-ce que tu as fini ?</Text>
+      <Text style={styles.panelTitle}>{t("cooked.question")}</Text>
       <Text style={styles.panelBody}>
         Décoche ce qu'il te reste — on ne retire que le reste.
       </Text>
@@ -134,11 +137,11 @@ export function CookedButton({ usesInventory, onDone }: Props) {
         {busy ? (
           <ActivityIndicator color={colors.onPrimary} size="small" />
         ) : (
-          <Text style={styles.confirmBtnText}>Retirer de mon frigo</Text>
+          <Text style={styles.confirmBtnText}>{t("cooked.remove")}</Text>
         )}
       </Pressable>
       <Pressable onPress={() => setMatches(null)}>
-        <Text style={styles.cancel}>Annuler</Text>
+        <Text style={styles.cancel}>{t("common.cancel")}</Text>
       </Pressable>
     </View>
   );

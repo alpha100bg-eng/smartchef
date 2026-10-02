@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
+import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 type Props = { children: React.ReactNode };
@@ -29,7 +30,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         <View style={styles.icon}>
           <Ionicons name="alert-circle-outline" size={34} color={colors.danger} />
         </View>
-        <Text style={styles.title}>Quelque chose s'est mal passé</Text>
+        <Text style={styles.title}>{t("error.title")}</Text>
         <Text style={styles.body}>
           L'écran n'a pas pu s'afficher. Tu peux réessayer — tes données sont
           intactes.
@@ -38,7 +39,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
           {error.message}
         </Text>
         <Pressable style={styles.button} onPress={this.reset}>
-          <Text style={styles.buttonText}>Réessayer</Text>
+          <Text style={styles.buttonText}>{t("common.retry")}</Text>
         </Pressable>
       </View>
     );

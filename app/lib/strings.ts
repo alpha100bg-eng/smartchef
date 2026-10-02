@@ -89,6 +89,27 @@ const fr = {
   "inventory.errAlerts": "Échec de l'activation des alertes",
   "inventory.alertsRefused": "Notifications refusées — active-les dans les réglages.",
 
+  // ── Allergènes proposés en un appui ─────────────────────────────
+  "allergen.peanut": "Arachide",
+  "allergen.nuts": "Fruits à coque",
+  "allergen.lactose": "Lactose",
+  "allergen.gluten": "Gluten",
+  "allergen.egg": "Œuf",
+  "allergen.fish": "Poisson",
+  "allergen.shellfish": "Crustacés",
+  "allergen.soy": "Soja",
+  "allergen.add": "Ajouter l'allergie {name}",
+  "allergen.rm": "Retirer l'allergie {name}",
+
+  // ── Régimes ─────────────────────────────────────────────────────
+  "diet.omnivore": "Omnivore",
+  "diet.vegetarian": "Végétarien",
+  "diet.vegan": "Végan",
+  "diet.glutenfree": "Sans gluten",
+
+  // ── Unités ──────────────────────────────────────────────────────
+  "unit.piece": "pièce",
+
   // ── Péremption ──────────────────────────────────────────────────
   "expiry.today": "à consommer aujourd'hui",
   "expiry.tomorrow": "demain",
@@ -120,6 +141,8 @@ const fr = {
   "search.errDetail": "Impossible de charger la recette",
   "search.errKeep": "Impossible de garder cette recette",
   "search.errForget": "Suppression impossible",
+  "search.forgetLabel": "Retirer {title} des recettes gardées",
+  "search.keptLabel": "{title} est gardée",
   "search.chip1": "Rapide ce soir",
   "search.chip2": "Moins de 20 min",
   "search.chip3": "Végétarien",
@@ -166,6 +189,8 @@ const fr = {
   "shopping.errCheck": "La coche n'a pas pu être enregistrée.",
   "shopping.errStore": "Impossible de ranger les courses",
   "shopping.toSort": "À ranger",
+  "shopping.check": "Cocher {name}",
+  "shopping.uncheck": "Décocher {name}",
 
   // ── Rayons ──────────────────────────────────────────────────────
   "aisle.produce": "Fruits et légumes",
@@ -317,6 +342,24 @@ const en: Record<Key, string> = {
   "inventory.errAlerts": "Could not turn alerts on",
   "inventory.alertsRefused": "Notifications blocked — turn them on in your settings.",
 
+  "allergen.peanut": "Peanut",
+  "allergen.nuts": "Tree nuts",
+  "allergen.lactose": "Lactose",
+  "allergen.gluten": "Gluten",
+  "allergen.egg": "Egg",
+  "allergen.fish": "Fish",
+  "allergen.shellfish": "Shellfish",
+  "allergen.soy": "Soy",
+  "allergen.add": "Add the {name} allergy",
+  "allergen.rm": "Remove the {name} allergy",
+
+  "diet.omnivore": "Omnivore",
+  "diet.vegetarian": "Vegetarian",
+  "diet.vegan": "Vegan",
+  "diet.glutenfree": "Gluten free",
+
+  "unit.piece": "piece",
+
   "expiry.today": "eat it today",
   "expiry.tomorrow": "tomorrow",
   "expiry.inDays": "in {n} days",
@@ -346,6 +389,8 @@ const en: Record<Key, string> = {
   "search.errDetail": "Could not load the recipe",
   "search.errKeep": "Could not keep this recipe",
   "search.errForget": "Could not remove it",
+  "search.forgetLabel": "Stop keeping {title}",
+  "search.keptLabel": "{title} is kept",
   "search.chip1": "Quick tonight",
   "search.chip2": "Under 20 min",
   "search.chip3": "Vegetarian",
@@ -391,6 +436,8 @@ const en: Record<Key, string> = {
   "shopping.errCheck": "That tick could not be saved.",
   "shopping.errStore": "Could not put the shopping away",
   "shopping.toSort": "To sort",
+  "shopping.check": "Tick {name}",
+  "shopping.uncheck": "Untick {name}",
 
   "aisle.produce": "Fruit and veg",
   "aisle.dairy": "Dairy",

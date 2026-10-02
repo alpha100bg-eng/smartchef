@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { supabase } from "@/lib/supabase";
+import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 /**
@@ -26,23 +27,34 @@ import { colors, radius, spacing, font, shadow } from "@/lib/theme";
  * il sert réellement.
  */
 
-const REGIMES = ["Omnivore", "Végétarien", "Végan", "Sans gluten"];
+/**
+ * Clé d'affichage + valeur stockée.
+ *
+ * La valeur enregistrée reste un mot anglais invariable : elle part dans le
+ * contexte envoyé à l'IA, et un `diet_type` qui changerait de langue selon
+ * l'appareil rendrait les anciens profils incohérents.
+ *
+ * Traduit au rendu et non ici : un `const` au niveau du module figerait la
+ * langue au chargement.
+ */
+const REGIMES = [
+  ["diet.omnivore", "omnivore"],
+  ["diet.vegetarian", "vegetarian"],
+  ["diet.vegan", "vegan"],
+  ["diet.glutenfree", "gluten-free"],
+] as const;
 
 // Les allergènes à déclaration obligatoire les plus courants : un appui vaut
 // mieux qu'un champ libre, et évite les fautes de frappe que l'IA ne
 // reconnaîtrait pas.
 const ALLERGENES = [
-  "Arachide",
-  "Fruits à coque",
-  "Lactose",
-  "Gluten",
-  "Œuf",
-  "Poisson",
-  "Crustacés",
-  "Soja",
-];
+  "allergen.peanut", "allergen.nuts", "allergen.lactose", "allergen.gluten",
+  "allergen.egg", "allergen.fish", "allergen.shellfish", "allergen.soy",
+] as const;
 
 export default function Onboarding() {
+  // Redessine cet ecran quand la langue change.
+  useLang();
   const [etape, setEtape] = useState<"bienvenue" | "questions">("bienvenue");
   const [regime, setRegime] = useState<string | null>(null);
   const [choisies, setChoisies] = useState<string[]>([]);
@@ -65,7 +77,7 @@ export default function Onboarding() {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      setError("Session expirée, reconnectez-vous.");
+      setError(t("onboarding.expired"));
       setSaving(false);
       return;
     }
@@ -73,7 +85,7 @@ export default function Onboarding() {
     if (regime) {
       const { error: e } = await supabase
         .from("profiles")
-        .update({ diet_type: regime.toLowerCase() })
+        .update({ diet_type: regime })
         .eq("id", user.id);
       if (e) {
         setError(e.message);
@@ -111,16 +123,16 @@ export default function Onboarding() {
           <View style={styles.badge}>
             <Ionicons name="sparkles" size={28} color={colors.onPrimary} />
           </View>
-          <Text style={styles.title}>7 jours offerts</Text>
+          <Text style={styles.title}>{t("onboarding.trialTitle")}</Text>
           <Text style={styles.subtitle}>
             Tout est ouvert, sans carte bancaire.
           </Text>
 
           <View style={styles.list}>
             {[
-              "Photographie ton frigo, l'app reconnaît les aliments",
-              "Le plan de la semaine, composé avec ce que tu as",
-              "La liste de courses, sans racheter ce que tu possèdes",
+              t("onboarding.perk1"),
+              t("onboarding.perk2"),
+              t("onboarding.perk3"),
             ].map((t) => (
               <View key={t} style={styles.listRow}>
                 <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
@@ -131,7 +143,7 @@ export default function Onboarding() {
         </View>
 
         <Pressable style={styles.button} onPress={() => setEtape("questions")}>
-          <Text style={styles.buttonText}>C'est parti</Text>
+          <Text style={styles.buttonText}>{t("onboarding.go")}</Text>
         </Pressable>
       </View>
     );
@@ -140,35 +152,40 @@ export default function Onboarding() {
   // ── Une seule question, celle qui ne peut pas attendre ────────────
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.form}>
-      <Text style={styles.title}>Une seule question</Text>
-      <Text style={styles.subtitle}>
-        Pour ne jamais te proposer quelque chose que tu ne peux pas manger.
-      </Text>
+      <Text style={styles.title}>{t("onboarding.title")}</Text>
+      <Text style={styles.subtitle}>{t("onboarding.sub")}</Text>
 
-      <Text style={styles.label}>Ton régime</Text>
+      <Text style={styles.label}>{t("onboarding.diet")}</Text>
       <View style={styles.chips}>
-        {REGIMES.map((r) => (
+        {REGIMES.map(([cle, valeur]) => (
           <Pressable
-            key={r}
-            onPress={() => setRegime(regime === r ? null : r)}
-            style={[styles.chip, regime === r && styles.chipOn]}
+            key={valeur}
+            onPress={() => setRegime(regime === valeur ? null : valeur)}
+            style={[styles.chip, regime === valeur && styles.chipOn]}
           >
-            <Text style={regime === r ? styles.chipTextOn : styles.chipText}>{r}</Text>
+            <Text style={regime === valeur ? styles.chipTextOn : styles.chipText}>
+              {t(cle)}
+            </Text>
           </Pressable>
         ))}
       </View>
 
-      <Text style={styles.label}>Des allergies ?</Text>
+      <Text style={styles.label}>{t("onboarding.allergies")}</Text>
       <View style={styles.chips}>
-        {ALLERGENES.map((a) => (
+        {ALLERGENES.map((cle) => (
           <Pressable
-            key={a}
-            onPress={() => basculer(a)}
-            style={[styles.chip, choisies.includes(a) && styles.chipDanger]}
-            accessibilityLabel={`${choisies.includes(a) ? "Retirer" : "Ajouter"} l'allergie ${a}`}
+            key={cle}
+            onPress={() => basculer(t(cle))}
+            style={[styles.chip, choisies.includes(t(cle)) && styles.chipDanger]}
+            accessibilityLabel={t(
+              choisies.includes(t(cle)) ? "allergen.rm" : "allergen.add",
+              { name: t(cle) }
+            )}
           >
-            <Text style={choisies.includes(a) ? styles.chipTextOn : styles.chipText}>
-              {a}
+            <Text
+              style={choisies.includes(t(cle)) ? styles.chipTextOn : styles.chipText}
+            >
+              {t(cle)}
             </Text>
           </Pressable>
         ))}
@@ -176,7 +193,7 @@ export default function Onboarding() {
 
       <TextInput
         style={styles.input}
-        placeholder="Autre allergie (séparées par une virgule)"
+        placeholder={t("onboarding.otherAllergy")}
         placeholderTextColor={colors.textMuted}
         value={autres}
         onChangeText={setAutres}
@@ -186,7 +203,7 @@ export default function Onboarding() {
 
       <Pressable style={styles.button} onPress={terminer} disabled={saving}>
         <Text style={styles.buttonText}>
-          {saving ? "..." : "Scanner mon frigo"}
+          {saving ? "..." : t("onboarding.finish")}
         </Text>
       </Pressable>
       <Text style={styles.note}>

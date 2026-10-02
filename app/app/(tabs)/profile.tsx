@@ -13,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 import { unregisterExpiryAlerts } from "@/lib/notifications";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { PremiumCard } from "@/components/PremiumCard";
+import { setLang, t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 type Profile = {
@@ -24,6 +25,9 @@ type Profile = {
 };
 
 export default function ProfileScreen() {
+  // Redessine cet ecran quand la langue change, et sert a cocher le bon
+  // bouton dans le selecteur ci-dessous.
+  const lang = useLang();
   const [email, setEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [allergies, setAllergies] = useState<string[]>([]);
@@ -70,7 +74,7 @@ export default function ProfileScreen() {
       await supabase.auth.signOut();
       // The root layout's auth listener redirects to the login screen.
     } catch (e: any) {
-      setError(e.message ?? "Échec de la déconnexion");
+      setError(e.message ?? t("profile.errSignOut"));
       setSigningOut(false);
     }
   }
@@ -79,7 +83,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.title}>Profil</Text>
+      <Text style={styles.title}>{t("profile.title")}</Text>
 
       <View style={styles.identity}>
         <View style={styles.avatar}>
@@ -92,15 +96,15 @@ export default function ProfileScreen() {
 
       {profile && (
         <View style={styles.card}>
-          <Row icon="wallet-outline" label="Budget hebdo"
+          <Row icon="wallet-outline" label={t("profile.budget")}
             value={profile.budget_weekly ? `${profile.budget_weekly} €` : "—"} />
-          <Row icon="time-outline" label="Temps par repas"
+          <Row icon="time-outline" label={t("profile.timePerMeal")}
             value={profile.time_per_meal_min ? `${profile.time_per_meal_min} min` : "—"} />
-          <Row icon="leaf-outline" label="Régime" value={profile.diet_type || "—"} />
-          <Row icon="flag-outline" label="Objectifs"
+          <Row icon="leaf-outline" label={t("profile.diet")} value={profile.diet_type || "—"} />
+          <Row icon="flag-outline" label={t("profile.goals")}
             value={profile.goals?.length ? profile.goals.join(", ") : "—"} />
-          <Row icon="alert-circle-outline" label="Allergies"
-            value={allergies.length ? allergies.join(", ") : "aucune"} last />
+          <Row icon="alert-circle-outline" label={t("profile.allergies")}
+            value={allergies.length ? allergies.join(", ") : t("profile.noAllergy")} last />
         </View>
       )}
 
@@ -114,6 +118,26 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <PremiumCard email={email} />
+
+        <View style={styles.langRow}>
+          <Ionicons name="language-outline" size={17} color={colors.textMuted} />
+          <Text style={styles.rowLabel}>{t("profile.language")}</Text>
+          <View style={styles.langChips}>
+            {(["fr", "en"] as const).map((l) => (
+              <Pressable
+                key={l}
+                onPress={() => setLang(l)}
+                style={[styles.langChip, lang === l && styles.langChipOn]}
+                accessibilityLabel={l === "fr" ? "Français" : "English"}
+              >
+                <Text style={lang === l ? styles.langTextOn : styles.langText}>
+                  {l === "fr" ? "Français" : "English"}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
         <FeedbackForm />
       </ScrollView>
 
@@ -121,14 +145,14 @@ export default function ProfileScreen() {
         style={styles.signOutBtn}
         onPress={signOut}
         disabled={signingOut}
-        accessibilityLabel="Se déconnecter de l'application"
+        accessibilityLabel={t("profile.signOutLabel")}
       >
         {signingOut ? (
           <ActivityIndicator color={colors.danger} />
         ) : (
           <>
             <Ionicons name="log-out-outline" size={18} color={colors.danger} />
-            <Text style={styles.signOutText}>Se déconnecter</Text>
+            <Text style={styles.signOutText}>{t("profile.signOut")}</Text>
           </>
         )}
       </Pressable>
@@ -191,6 +215,27 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: font.small,
   },
+
+  langRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    paddingVertical: 11,
+    paddingHorizontal: spacing.md,
+    ...shadow.card,
+  },
+  langChips: { flexDirection: "row", gap: 5, flex: 1, justifyContent: "flex-end" },
+  langChip: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: colors.cardMuted,
+  },
+  langChipOn: { backgroundColor: colors.primary },
+  langText: { color: colors.textSecondary, fontSize: font.tiny },
+  langTextOn: { color: colors.onPrimary, fontSize: font.tiny, fontWeight: "700" },
 
   scroll: { flex: 1 },
   scrollBody: { gap: spacing.sm, paddingTop: spacing.xs, paddingBottom: spacing.sm },

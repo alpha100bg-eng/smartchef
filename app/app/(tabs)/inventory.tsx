@@ -22,6 +22,7 @@ import {
 } from "@/lib/inventory";
 import { registerForExpiryAlerts } from "@/lib/notifications";
 import { countUrgent, expiryLabel, sortByUrgency, urgency } from "@/lib/expiry";
+import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 type Row = {
@@ -33,9 +34,12 @@ type Row = {
 };
 
 const LOW_CONFIDENCE = 0.6;
-const UNITS = ["pièce", "g", "kg", "L", "ml"];
+// "pièce" se traduit ; les unités métriques sont universelles.
+const UNITS = () => [t("unit.piece"), "g", "kg", "L", "ml"];
 
 export default function Inventory() {
+  // Redessine cet ecran quand la langue change.
+  useLang();
   const [items, setItems] = useState<Row[]>([]);
   const [review, setReview] = useState<ReviewItem[] | null>(null);
   const [photoPath, setPhotoPath] = useState<string | null>(null);
@@ -47,9 +51,9 @@ export default function Inventory() {
     try {
       const granted = await registerForExpiryAlerts();
       setAlertsOn(granted);
-      if (!granted) setError("Notifications refusées — active-les dans les réglages.");
+      if (!granted) setError(t("inventory.alertsRefused"));
     } catch (e: any) {
-      setError(e.message ?? "Échec de l'activation des alertes");
+      setError(e.message ?? t("inventory.errAlerts"));
     }
   }
 
@@ -75,7 +79,7 @@ export default function Inventory() {
       await deleteItem(id);
     } catch (e: any) {
       setItems(previous);
-      setError(e.message ?? "Suppression impossible");
+      setError(e.message ?? t("inventory.errDelete"));
     }
   }
 
@@ -89,7 +93,7 @@ export default function Inventory() {
       const detected = await detectFromPhoto(path);
       setReview(detected.map(toReviewItem));
     } catch (e: any) {
-      setError(e.message ?? "Échec de l'analyse");
+      setError(e.message ?? t("inventory.errScan"));
     } finally {
       setBusy(null);
     }
@@ -123,7 +127,7 @@ export default function Inventory() {
       setPhotoPath(null);
       await loadInventory();
     } catch (e: any) {
-      setError(e.message ?? "Échec de l'enregistrement");
+      setError(e.message ?? t("inventory.errSave"));
     } finally {
       setBusy(null);
     }
@@ -143,7 +147,7 @@ export default function Inventory() {
           {review.length} aliment{review.length > 1 ? "s" : ""} détecté
           {review.length > 1 ? "s" : ""}
         </Text>
-        <Text style={styles.subtitle}>Vérifie et corrige avant d'ajouter.</Text>
+        <Text style={styles.subtitle}>{t("inventory.review")}</Text>
 
         {error && <Text style={styles.error}>{error}</Text>}
 
@@ -154,12 +158,12 @@ export default function Inventory() {
               {doubtful && (
                 <View style={styles.warnBadge}>
                   <Ionicons name="alert-circle" size={13} color={colors.warn} />
-                  <Text style={styles.warnBadgeText}>à vérifier</Text>
+                  <Text style={styles.warnBadgeText}>{t("inventory.doubtful")}</Text>
                 </View>
               )}
               <TextInput
                 style={styles.input}
-                placeholder="Nom"
+                placeholder={t("inventory.name")}
                 placeholderTextColor={colors.textMuted}
                 value={row.name}
                 onChangeText={(t) => updateRow(i, { name: t })}
@@ -167,14 +171,14 @@ export default function Inventory() {
               <View style={styles.rowInline}>
                 <TextInput
                   style={[styles.input, styles.qty]}
-                  placeholder="Qté"
+                  placeholder={t("inventory.qty")}
                   placeholderTextColor={colors.textMuted}
                   keyboardType="numeric"
                   value={row.quantity}
                   onChangeText={(t) => updateRow(i, { quantity: t })}
                 />
                 <View style={styles.units}>
-                  {UNITS.map((u) => (
+                  {UNITS().map((u) => (
                     <Pressable
                       key={u}
                       onPress={() => updateRow(i, { unit: u })}
@@ -191,7 +195,7 @@ export default function Inventory() {
               </View>
               <TextInput
                 style={styles.input}
-                placeholder="Date de péremption (AAAA-MM-JJ)"
+                placeholder={t("inventory.expiry")}
                 placeholderTextColor={colors.textMuted}
                 value={row.expiry_date}
                 onChangeText={(t) => updateRow(i, { expiry_date: t })}
@@ -201,14 +205,14 @@ export default function Inventory() {
               </Text>
               <TextInput
                 style={styles.input}
-                placeholder="Marque (optionnel)"
+                placeholder={t("inventory.brand")}
                 placeholderTextColor={colors.textMuted}
                 value={row.brand}
                 onChangeText={(t) => updateRow(i, { brand: t })}
               />
               <Pressable style={styles.removeRow} onPress={() => removeRow(i)}>
                 <Ionicons name="trash-outline" size={15} color={colors.danger} />
-                <Text style={styles.remove}>Supprimer</Text>
+                <Text style={styles.remove}>{t("common.delete")}</Text>
               </Pressable>
             </View>
           );
@@ -216,7 +220,7 @@ export default function Inventory() {
 
         <Pressable style={styles.addBtn} onPress={addRow}>
           <Ionicons name="add" size={18} color={colors.primaryDark} />
-          <Text style={styles.addBtnText}>Ajouter un article</Text>
+          <Text style={styles.addBtnText}>{t("inventory.addRow")}</Text>
         </Pressable>
 
         <Pressable
@@ -225,11 +229,11 @@ export default function Inventory() {
           disabled={busy === "save"}
         >
           <Text style={styles.primaryBtnText}>
-            {busy === "save" ? "..." : "Valider et ajouter à l'inventaire"}
+            {busy === "save" ? "..." : t("inventory.save")}
           </Text>
         </Pressable>
         <Pressable onPress={cancelReview}>
-          <Text style={styles.cancel}>Annuler</Text>
+          <Text style={styles.cancel}>{t("common.cancel")}</Text>
         </Pressable>
       </ScrollView>
     );
@@ -242,10 +246,10 @@ export default function Inventory() {
     <View style={styles.screen}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Mon frigo</Text>
+          <Text style={styles.title}>{t("inventory.title")}</Text>
           <Text style={styles.subtitle}>
             {items.length === 0
-              ? "Rien pour l'instant"
+              ? t("inventory.empty")
               : `${items.length} aliment${items.length > 1 ? "s" : ""}`}
           </Text>
         </View>
@@ -265,7 +269,7 @@ export default function Inventory() {
       {busy === "scan" ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
-          <Text style={styles.muted}>Analyse de la photo…</Text>
+          <Text style={styles.muted}>{t("inventory.analysing")}</Text>
         </View>
       ) : (
         <>
@@ -275,7 +279,7 @@ export default function Inventory() {
               <View style={styles.emptyIcon}>
                 <Ionicons name="leaf-outline" size={34} color={colors.primary} />
               </View>
-              <Text style={styles.emptyTitle}>Commence par une photo</Text>
+              <Text style={styles.emptyTitle}>{t("inventory.emptyTitle")}</Text>
               <Text style={styles.emptyBody}>
                 Prends ton frigo en photo, on identifie les aliments pour toi.
               </Text>
@@ -356,7 +360,7 @@ export default function Inventory() {
 
       <Pressable style={styles.primaryBtn} onPress={scan} disabled={busy === "scan"}>
         <Ionicons name="camera" size={19} color={colors.onPrimary} />
-        <Text style={styles.primaryBtnText}>Scanner mon frigo</Text>
+        <Text style={styles.primaryBtnText}>{t("onboarding.finish")}</Text>
       </Pressable>
     </View>
   );

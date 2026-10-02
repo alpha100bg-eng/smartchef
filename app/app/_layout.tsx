@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 
 import { supabase } from "@/lib/supabase";
 import { itemNameFromNotification } from "@/lib/notifications";
+import { initLang } from "@/lib/i18n";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function RootLayout() {
@@ -12,6 +13,12 @@ export default function RootLayout() {
   const [loading, setLoading] = useState(true);
   const segments = useSegments();
   const router = useRouter();
+
+  // Applique la langue mémorisée. Sans ça, l'app démarrerait toujours dans
+  // la langue de l'appareil et ignorerait le choix de l'utilisateur.
+  useEffect(() => {
+    void initLang();
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {

@@ -8,12 +8,13 @@ import {
   remaining,
   type BillingStatus,
 } from "@/lib/billing";
+import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 const AVANTAGES = [
-  "Le plan de la semaine, 8 par mois",
-  "La liste de courses par rayon",
-  "100 scans et 300 recherches par mois",
+  t("premium.perk1"),
+  t("premium.perk2"),
+  t("premium.perk3"),
 ];
 
 /**
@@ -24,6 +25,8 @@ const AVANTAGES = [
  * demande un calcul.
  */
 export function PremiumCard({ email }: { email?: string | null }) {
+  // Redessine cet ecran quand la langue change.
+  useLang();
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +47,7 @@ export function PremiumCard({ email }: { email?: string | null }) {
       const url = await startCheckout(email);
       await Linking.openURL(url);
     } catch (e: any) {
-      setError(e.message ?? "Impossible d'ouvrir le paiement");
+      setError(e.message ?? t("premium.errCheckout"));
     } finally {
       setOpening(false);
     }
@@ -56,7 +59,7 @@ export function PremiumCard({ email }: { email?: string | null }) {
     return (
       <View style={styles.premiumCard}>
         <Ionicons name="sparkles" size={17} color={colors.primaryDark} />
-        <Text style={styles.premiumText}>Premium actif — merci !</Text>
+        <Text style={styles.premiumText}>{t("premium.active")}</Text>
       </View>
     );
   }
@@ -68,9 +71,9 @@ export function PremiumCard({ email }: { email?: string | null }) {
     <View style={styles.card}>
       <View style={styles.head}>
         <Text style={styles.title}>
-          {enEssai ? "Ton essai" : "Passer en Premium"}
+          {enEssai ? t("premium.yourTrial") : t("premium.upgrade")}
         </Text>
-        <Text style={styles.price}>{status.price_eur} €<Text style={styles.perMonth}>/mois</Text></Text>
+        <Text style={styles.price}>{status.price_eur} €<Text style={styles.perMonth}>{t("premium.perMonth")}</Text></Text>
       </View>
 
       {enEssai && (
@@ -78,20 +81,20 @@ export function PremiumCard({ email }: { email?: string | null }) {
           <Ionicons name="time-outline" size={16} color={colors.primaryDark} />
           <Text style={styles.trialText}>
             {jours <= 1
-              ? "Dernier jour d'accès complet"
-              : `Accès complet encore ${jours} jours`}
+              ? t("premium.lastDay")
+              : t("premium.daysLeft", { n: jours })}
           </Text>
         </View>
       )}
 
       <View style={styles.quotas}>
-        <Quota label="scans" left={remaining(status, "vision")} />
-        <Quota label="recherches" left={remaining(status, "search")} />
+        <Quota label={t("premium.scans")} left={remaining(status, "vision")} />
+        <Quota label={t("premium.searches")} left={remaining(status, "search")} />
       </View>
-      <Text style={styles.quotaNote}>Ce qu'il te reste ce mois-ci.</Text>
+      <Text style={styles.quotaNote}>{t("premium.remaining")}</Text>
 
       <Text style={styles.listHead}>
-        {enEssai ? "Ce que tu perdras à la fin de l'essai" : "Avec Premium"}
+        {enEssai ? t("premium.willLose") : t("premium.withPremium")}
       </Text>
       <View style={styles.list}>
         {AVANTAGES.map((a) => (
@@ -114,12 +117,12 @@ export function PremiumCard({ email }: { email?: string | null }) {
             <ActivityIndicator color={colors.onPrimary} />
           ) : (
             <Text style={styles.ctaText}>
-              {enEssai ? "Garder l'accès complet" : "S'abonner"}
+              {enEssai ? t("premium.keepAccess") : t("premium.subscribe")}
             </Text>
           )}
         </Pressable>
       ) : (
-        <Text style={styles.soon}>Le paiement arrive bientôt.</Text>
+        <Text style={styles.soon}>{t("premium.soon")}</Text>
       )}
     </View>
   );

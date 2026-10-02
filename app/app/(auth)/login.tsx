@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { supabase } from "@/lib/supabase";
+import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 /** Les trois gestes de l'app, dans l'ordre où on les fait. */
@@ -14,22 +15,24 @@ const ETAPES: {
 }[] = [
   {
     icon: "camera-outline",
-    titre: "Photographie ton frigo",
-    texte: "L'app reconnaît les aliments et estime combien de temps ils tiennent.",
+    titre: t("login.step1.title"),
+    texte: t("login.step1.text"),
   },
   {
     icon: "restaurant-outline",
-    titre: "Reçois des recettes",
-    texte: "Des idées avec ce que tu as déjà, en priorisant ce qui périme bientôt.",
+    titre: t("login.step2.title"),
+    texte: t("login.step2.text"),
   },
   {
     icon: "cart-outline",
-    titre: "Ne rachète rien en double",
-    texte: "La liste de courses retire ce qui est encore dans ton frigo.",
+    titre: t("login.step3.title"),
+    texte: t("login.step3.text"),
   },
 ];
 
 export default function Login() {
+  // Redessine cet ecran quand la langue change.
+  useLang();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -102,14 +105,14 @@ export default function Login() {
         </View>
 
         <Pressable style={styles.button} onPress={() => openForm("signup")}>
-          <Text style={styles.buttonText}>Commencer gratuitement</Text>
+          <Text style={styles.buttonText}>{t("login.start")}</Text>
         </Pressable>
         <Text style={styles.reassure}>
           Sans installation, sans carte bancaire.
         </Text>
 
         <Pressable onPress={() => openForm("signin")}>
-          <Text style={styles.switch}>J'ai déjà un compte</Text>
+          <Text style={styles.switch}>{t("login.haveAccount")}</Text>
         </Pressable>
       </ScrollView>
     );
@@ -123,7 +126,7 @@ export default function Login() {
       <View style={styles.card}>
         <TextInput
           style={styles.input}
-          placeholder="Email"
+          placeholder={t("login.email")}
           placeholderTextColor={colors.textMuted}
           autoCapitalize="none"
           keyboardType="email-address"
@@ -132,7 +135,7 @@ export default function Login() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Mot de passe"
+          placeholder={t("login.password")}
           placeholderTextColor={colors.textMuted}
           secureTextEntry
           value={password}
@@ -143,7 +146,7 @@ export default function Login() {
 
         <Pressable style={styles.button} onPress={submit} disabled={loading}>
           <Text style={styles.buttonText}>
-            {loading ? "..." : mode === "signin" ? "Se connecter" : "Créer un compte"}
+            {loading ? "..." : mode === "signin" ? t("login.signIn") : t("login.signUp")}
           </Text>
         </Pressable>
       </View>
@@ -151,13 +154,13 @@ export default function Login() {
       <Pressable onPress={() => setMode(mode === "signin" ? "signup" : "signin")}>
         <Text style={styles.switch}>
           {mode === "signin"
-            ? "Pas de compte ? Créer un compte"
-            : "Déjà un compte ? Se connecter"}
+            ? t("login.toSignUp")
+            : t("login.toSignIn")}
         </Text>
       </Pressable>
 
       <Pressable onPress={() => setShowForm(false)}>
-        <Text style={styles.back}>← C'est quoi SmartChef ?</Text>
+        <Text style={styles.back}>{t("login.whatIsIt")}</Text>
       </Pressable>
       </View>
     </View>
