@@ -20,7 +20,12 @@ const INVARIABLES: Record<Lang, Set<string>> = {
   ]),
   en: new Set([
     "rice", "fish", "bread", "cheese", "pasta", "hummus", "couscous",
-    "juice", "lettuce", "molasses", "asparagus", "sauce", "rice",
+    "juice", "lettuce", "molasses", "asparagus", "sauce",
+  ]),
+  // Mots espagnols déjà au singulier qu'une règle amputerait : « cuscús »
+  // deviendrait « cuscú », « arroz » est intact mais « anis » perdrait son s.
+  es: new Set([
+    "cuscus", "anis", "lunes", "paraguas", "cumpleanos", "arroz", "maiz",
   ]),
 };
 
@@ -63,8 +68,46 @@ function singulariserEn(w: string): string {
   return w;
 }
 
+/** Pluriels espagnols en "-es" qu'aucune règle ne peut trancher : « panes »
+ * donne « pan » mais « carnes » donne « carne », mêmes lettres finales. */
+const IRREGULIERS_ES: Record<string, string> = {
+  limones: "limon",
+  melones: "melon",
+  panes: "pan",
+  flanes: "flan",
+  yogures: "yogur",
+  flores: "flor",
+  coles: "col",
+  champinones: "champinon",
+};
+
+/**
+ * Espagnol. Les accents étant retirés avant cette étape, « limón » et
+ * « limones » convergent vers « limon ».
+ *
+ * Volontairement prudent : on ne retire que le « -s » après voyelle, qui
+ * couvre la grande majorité des aliments. Les pluriels en « -es » sont
+ * ambigus et passent par la liste ci-dessus — la couche sémantique tranchera
+ * le reste.
+ */
+function singulariserEs(w: string): string {
+  if (INVARIABLES.es.has(w)) return w;
+  if (IRREGULIERS_ES[w]) return IRREGULIERS_ES[w];
+  if (w.endsWith("ces") && w.length > 4) return w.slice(0, -3) + "z";
+  if (w.endsWith("s") && w.length > 3 && "aeiou".includes(w[w.length - 2])) {
+    return w.slice(0, -1);
+  }
+  return w;
+}
+
+const SINGULARISEURS: Record<Lang, (w: string) => string> = {
+  fr: singulariserFr,
+  en: singulariserEn,
+  es: singulariserEs,
+};
+
 export function normalize(name: string, lang: Lang = currentLang()): string {
-  const singulariser = lang === "en" ? singulariserEn : singulariserFr;
+  const singulariser = SINGULARISEURS[lang] ?? singulariserFr;
   return stripAccents(name.toLowerCase())
     .trim()
     .split(/\s+/)

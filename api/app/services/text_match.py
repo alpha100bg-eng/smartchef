@@ -13,7 +13,7 @@ Jumeau JS : `app/lib/normalize.ts` — garder les deux en phase.
 """
 import unicodedata
 
-from app.lang import EN, FR
+from app.lang import EN, ES, FR
 
 # Noms dont le singulier et le pluriel sont identiques.
 INVARIABLES = {
@@ -25,6 +25,8 @@ INVARIABLES = {
         "rice", "fish", "bread", "cheese", "pasta", "hummus", "couscous",
         "juice", "lettuce", "molasses", "asparagus", "sauce",
     },
+    # Mots espagnols deja au singulier qu'une regle amputerait.
+    ES: {"cuscus", "anis", "lunes", "paraguas", "cumpleanos", "arroz", "maiz"},
 }
 
 # Pluriels anglais irréguliers qu'aucune règle ne rattrape.
@@ -81,9 +83,48 @@ def _singularize_en(w: str) -> str:
     return w
 
 
+# Pluriels espagnols en "-es" qu'aucune règle ne peut trancher : « panes »
+# donne « pan » mais « carnes » donne « carne », avec les mêmes lettres
+# finales. Seule une liste explicite évite de mutiler l'un ou l'autre.
+IRREGULARS_ES = {
+    "limones": "limon",
+    "melones": "melon",
+    "panes": "pan",
+    "flanes": "flan",
+    "yogures": "yogur",
+    "flores": "flor",
+    "coles": "col",
+    "champinones": "champinon",
+}
+
+
+def _singularize_es(w: str) -> str:
+    """Les accents étant retirés avant cette étape, « limón » et « limones »
+    convergent vers « limon ».
+
+    Volontairement prudent, comme les deux autres langues : on ne retire que
+    le « -s » après voyelle, qui couvre la grande majorité des aliments
+    (tomates, patatas, naranjas, cebollas). Les pluriels en « -es » sont
+    ambigus et passent par la liste ci-dessus ou restent tels quels — la
+    couche sémantique tranchera.
+    """
+    if w in INVARIABLES[ES]:
+        return w
+    if w in IRREGULARS_ES:
+        return IRREGULARS_ES[w]
+    if w.endswith("ces") and len(w) > 4:
+        return w[:-3] + "z"  # nueces -> nuez, peces -> pez
+    if w.endswith("s") and len(w) > 3 and w[-2] in "aeiou":
+        return w[:-1]  # tomates -> tomate, patatas -> patata
+    return w
+
+
+_SINGULARIZERS = {FR: _singularize_fr, EN: _singularize_en, ES: _singularize_es}
+
+
 def normalize(name: str, lang: str = FR) -> str:
     """Lowercase, strip accents, collapse spaces, prudent-singularize each word."""
-    singularize = _singularize_en if lang == EN else _singularize_fr
+    singularize = _SINGULARIZERS.get(lang, _singularize_fr)
     s = strip_accents(name.lower()).strip()
     words = [singularize(w) for w in s.split()]
     return " ".join(w for w in words if w)

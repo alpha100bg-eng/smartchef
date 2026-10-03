@@ -44,7 +44,7 @@ const AISLE_ICONS: Record<string, IconName> = Object.fromEntries(
       ["aisle.bakery", "pizza-outline"],
     ] as const
   ).flatMap(([cle, icone]) =>
-    (["fr", "en"] as const).map((l) => [STRINGS[l][cle].toLowerCase(), icone])
+    (["fr", "en", "es"] as const).map((l) => [STRINGS[l][cle].toLowerCase(), icone])
   )
 );
 

@@ -6,7 +6,7 @@ retire rien. D'où une couverture serrée.
 """
 import pytest
 
-from app.lang import EN, FR
+from app.lang import EN, ES, FR
 from app.services.text_match import layer1_covered, normalize
 
 
@@ -76,3 +76,48 @@ def test_layer1_still_refuses_variants():
     « milk », et ce doute part à la couche sémantique."""
     assert not layer1_covered("almond milk", ["milk"], EN)
     assert not layer1_covered("spring onion", ["onion"], EN)
+
+
+# ── Espagnol ────────────────────────────────────────────────────────
+@pytest.mark.parametrize("pluriel,singulier", [
+    ("tomates", "tomate"),
+    ("patatas", "patata"),
+    ("naranjas", "naranja"),
+    ("cebollas", "cebolla"),
+    ("huevos", "huevo"),
+    ("carnes", "carne"),
+    ("limones", "limon"),
+    ("panes", "pan"),
+    ("nueces", "nuez"),
+    ("flores", "flor"),
+])
+def test_spanish_plurals_resolve(pluriel, singulier):
+    assert normalize(pluriel, ES) == normalize(singulier, ES)
+
+
+def test_the_ambiguous_es_pair():
+    """« panes » donne « pan » mais « carnes » donne « carne » : mêmes lettres
+    finales, singuliers differents. Aucune regle ne tranche — d'ou la liste
+    explicite."""
+    assert normalize("panes", ES) == "pan"
+    assert normalize("carnes", ES) == "carne"
+
+
+@pytest.mark.parametrize("mot", ["arroz", "cuscus", "anis", "maiz"])
+def test_spanish_invariables(mot):
+    assert normalize(mot, ES) == mot
+
+
+def test_accents_converge_before_singularizing():
+    """Les accents sont retires en amont : « limón » et « limones » doivent
+    aboutir au meme mot."""
+    assert normalize("limón", ES) == normalize("limones", ES)
+
+
+def test_each_language_would_mangle_the_others():
+    assert normalize("tomates", ES) == "tomate"
+    assert normalize("tomates", EN) == "tomate"   # -es apres consonne
+    assert normalize("tomates", FR) == "tomate"   # -s simple
+    # Mais la ou elles divergent vraiment :
+    assert normalize("nueces", ES) == "nuez"
+    assert normalize("nueces", FR) != "nuez"

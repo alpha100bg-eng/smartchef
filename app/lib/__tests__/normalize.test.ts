@@ -64,9 +64,42 @@ describe("anglais", () => {
   });
 });
 
+describe("espagnol", () => {
+  test.each([
+    ["tomates", "tomate"],
+    ["patatas", "patata"],
+    ["naranjas", "naranja"],
+    ["huevos", "huevo"],
+    ["carnes", "carne"],
+    ["limones", "limon"],
+    ["panes", "pan"],
+    ["nueces", "nuez"],
+  ])("%s → %s", (pluriel, singulier) => {
+    expect(normalize(pluriel, "es")).toBe(normalize(singulier, "es"));
+  });
+
+  test("la paire ambigue panes / carnes", () => {
+    // Memes lettres finales, singuliers differents : aucune regle ne tranche.
+    expect(normalize("panes", "es")).toBe("pan");
+    expect(normalize("carnes", "es")).toBe("carne");
+  });
+
+  test("les invariables sont laisses tels quels", () => {
+    for (const mot of ["arroz", "cuscus", "anis", "maiz"]) {
+      expect(normalize(mot, "es")).toBe(mot);
+    }
+  });
+
+  test("les accents convergent", () => {
+    expect(normalize("limón", "es")).toBe(normalize("limones", "es"));
+  });
+});
+
 test("chaque langue casserait les mots de l'autre", () => {
   // La raison d'être du découpage par langue.
   expect(normalize("potatoes", "fr")).not.toBe(normalize("potato", "fr"));
   expect(normalize("potatoes", "en")).toBe(normalize("potato", "en"));
   expect(normalize("gâteaux", "fr")).toBe(normalize("gâteau", "fr"));
+  expect(normalize("nueces", "es")).toBe("nuez");
+  expect(normalize("nueces", "fr")).not.toBe("nuez");
 });
