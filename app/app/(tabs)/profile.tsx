@@ -13,7 +13,7 @@ import { supabase } from "@/lib/supabase";
 import { unregisterExpiryAlerts } from "@/lib/notifications";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { PremiumCard } from "@/components/PremiumCard";
-import { LANGS, setLang, t, useLang } from "@/lib/i18n";
+import { LANGS, isRTL, setLang, t, useLang } from "@/lib/i18n";
 
 /** Chaque langue nommee dans sa propre langue. */
 const LANGUES = {
@@ -186,7 +186,12 @@ function Row({
     <View style={[styles.row, !last && styles.rowBorder]}>
       <Ionicons name={icon} size={17} color={colors.textMuted} />
       <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue} numberOfLines={2}>
+      {/* La valeur se colle au bord oppose au libelle. En arabe la ligne est
+          retournee, donc ce bord change de cote. */}
+      <Text
+        style={[styles.rowValue, { textAlign: isRTL() ? "left" : "right" }]}
+        numberOfLines={2}
+      >
         {value}
       </Text>
     </View>
@@ -222,7 +227,6 @@ const styles = StyleSheet.create({
   rowValue: {
     flex: 1,
     fontWeight: "500",
-    textAlign: "right",
     color: colors.text,
     fontSize: font.small,
   },
