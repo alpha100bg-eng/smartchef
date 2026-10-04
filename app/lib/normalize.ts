@@ -27,6 +27,43 @@ const INVARIABLES: Record<Lang, Set<string>> = {
   es: new Set([
     "cuscus", "anis", "lunes", "paraguas", "cumpleanos", "arroz", "maiz",
   ]),
+  pt: new Set(["lapis", "arroz", "cuscuz", "anis", "atum", "pires"]),
+  // Beaucoup de singuliers italiens finissent en « -e » : sans cette liste,
+  // la règle « -e → -a » en ferait « pesca », « carna », « latta ».
+  it: new Set([
+    "caffe", "te", "brodo", "riso", "olio", "miele", "pane", "latte",
+    "pesce", "carne", "dolce", "sale", "farine", "pepe", "aceto",
+  ]),
+  de: new Set([
+    "reis", "brot", "kase", "butter", "wasser", "zucker", "mehl", "milch",
+    "fleisch", "gemuse", "obst", "salz", "ol", "honig", "joghurt",
+  ]),
+};
+
+const IRREGULIERS_PT: Record<string, string> = {
+  limoes: "limao",
+  paes: "pao",
+  feijoes: "feijao",
+  maos: "mao",
+  papeis: "papel",
+  aneis: "anel",
+};
+
+const IRREGULIERS_IT: Record<string, string> = {
+  pani: "pane",
+  pesci: "pesce",
+  formaggi: "formaggio",
+  dolci: "dolce",
+  uova: "uovo",
+};
+
+/** Les trémas disparaissent au retrait des accents : « Äpfel » et « Apfel »
+ * convergent déjà sans règle. Restent les pluriels en « -er ». */
+const IRREGULIERS_DE: Record<string, string> = {
+  eier: "ei",
+  glaser: "glas",
+  blatter: "blatt",
+  hahnchen: "hahnchen",
 };
 
 /** Pluriels anglais irréguliers qu'aucune règle ne rattrape. */
@@ -100,10 +137,61 @@ function singulariserEs(w: string): string {
   return w;
 }
 
+/** Portugais. Proche de l'espagnol ; les pluriels en « -ões » / « -ães »
+ * passent par la liste, les accents étant déjà retirés. */
+function singulariserPt(w: string): string {
+  if (INVARIABLES.pt.has(w)) return w;
+  if (IRREGULIERS_PT[w]) return IRREGULIERS_PT[w];
+  if (w.endsWith("ns") && w.length > 3) return w.slice(0, -2) + "m";
+  if (w.endsWith("res") && w.length > 4) return w.slice(0, -2);
+  if (w.endsWith("s") && w.length > 3 && "aeiou".includes(w[w.length - 2])) {
+    return w.slice(0, -1);
+  }
+  return w;
+}
+
+/**
+ * Italien. Le pluriel change la voyelle finale : « pomodori » → « pomodoro ».
+ *
+ * Le « -i » est ambigu — il vient de « -o » ou de « -e ». On retient « -o »,
+ * de loin le plus fréquent pour les aliments ; la liste rattrape les autres.
+ */
+function singulariserIt(w: string): string {
+  if (INVARIABLES.it.has(w)) return w;
+  if (IRREGULIERS_IT[w]) return IRREGULIERS_IT[w];
+  // Le « h » ne sert qu'à durcir le c/g devant i ou e : il disparaît quand la
+  // voyelle finale redevient a/o. funghi → fungo, amiche → amica.
+  if (/(ghi|chi)$/.test(w) && w.length > 4) return w.slice(0, -3) + w[w.length - 3] + "o";
+  if (/(ghe|che)$/.test(w) && w.length > 4) return w.slice(0, -3) + w[w.length - 3] + "a";
+  if (w.endsWith("i") && w.length > 3) return w.slice(0, -1) + "o";
+  if (w.endsWith("e") && w.length > 3) return w.slice(0, -1) + "a";
+  return w;
+}
+
+/**
+ * Allemand, volontairement minimal. Les trémas convergent déjà au retrait des
+ * accents. Reste le pluriel en « -n » / « -en », qui couvre l'essentiel des
+ * aliments. Les pluriels en « -e » ne sont PAS traités : retirer le « e » de
+ * « Tomate » en ferait « Tomat ».
+ */
+function singulariserDe(w: string): string {
+  if (INVARIABLES.de.has(w)) return w;
+  if (IRREGULIERS_DE[w]) return IRREGULIERS_DE[w];
+  // Les diminutifs en -chen / -lein sont invariables.
+  if (/(chen|lein)$/.test(w)) return w;
+  if (w.endsWith("n") && w.length > 4 && "eln r".includes(w[w.length - 2])) {
+    return w.slice(0, -1);
+  }
+  return w;
+}
+
 const SINGULARISEURS: Record<Lang, (w: string) => string> = {
   fr: singulariserFr,
   en: singulariserEn,
   es: singulariserEs,
+  pt: singulariserPt,
+  it: singulariserIt,
+  de: singulariserDe,
 };
 
 export function normalize(name: string, lang: Lang = currentLang()): string {

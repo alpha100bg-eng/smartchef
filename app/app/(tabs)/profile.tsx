@@ -13,10 +13,17 @@ import { supabase } from "@/lib/supabase";
 import { unregisterExpiryAlerts } from "@/lib/notifications";
 import { FeedbackForm } from "@/components/FeedbackForm";
 import { PremiumCard } from "@/components/PremiumCard";
-import { setLang, t, useLang } from "@/lib/i18n";
+import { LANGS, setLang, t, useLang } from "@/lib/i18n";
 
 /** Chaque langue nommee dans sa propre langue. */
-const LANGUES = { fr: "Français", en: "English", es: "Español" } as const;
+const LANGUES = {
+  fr: "Français",
+  en: "English",
+  es: "Español",
+  pt: "Português",
+  it: "Italiano",
+  de: "Deutsch",
+} as const;
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 type Profile = {
@@ -126,7 +133,7 @@ export default function ProfileScreen() {
           <Ionicons name="language-outline" size={17} color={colors.textMuted} />
           <Text style={styles.rowLabel}>{t("profile.language")}</Text>
           <View style={styles.langChips}>
-            {(["fr", "en", "es"] as const).map((l) => (
+            {LANGS.map((l) => (
               <Pressable
                 key={l}
                 onPress={() => setLang(l)}

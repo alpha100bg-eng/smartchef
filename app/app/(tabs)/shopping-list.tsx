@@ -18,7 +18,7 @@ import {
   type ShoppingListView,
 } from "@/lib/shopping";
 import { fetchBillingStatus, hasFullAccess } from "@/lib/billing";
-import { t, useLang } from "@/lib/i18n";
+import { LANGS, t, useLang } from "@/lib/i18n";
 import { STRINGS } from "@/lib/strings";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { PremiumGate } from "@/components/PremiumGate";
@@ -44,7 +44,7 @@ const AISLE_ICONS: Record<string, IconName> = Object.fromEntries(
       ["aisle.bakery", "pizza-outline"],
     ] as const
   ).flatMap(([cle, icone]) =>
-    (["fr", "en", "es"] as const).map((l) => [STRINGS[l][cle].toLowerCase(), icone])
+    LANGS.map((l) => [STRINGS[l][cle].toLowerCase(), icone])
   )
 );
 

@@ -6,7 +6,7 @@ retire rien. D'où une couverture serrée.
 """
 import pytest
 
-from app.lang import EN, ES, FR
+from app.lang import DE, EN, ES, FR, IT, PT
 from app.services.text_match import layer1_covered, normalize
 
 
@@ -121,3 +121,62 @@ def test_each_language_would_mangle_the_others():
     # Mais la ou elles divergent vraiment :
     assert normalize("nueces", ES) == "nuez"
     assert normalize("nueces", FR) != "nuez"
+
+
+# ── Portugais ───────────────────────────────────────────────────────
+@pytest.mark.parametrize("pluriel,singulier", [
+    ("tomates", "tomate"), ("bananas", "banana"), ("ovos", "ovo"),
+    ("limões", "limão"), ("pães", "pão"), ("flores", "flor"),
+    ("homens", "homem"),
+])
+def test_portuguese_plurals(pluriel, singulier):
+    assert normalize(pluriel, PT) == normalize(singulier, PT)
+
+
+# ── Italien ─────────────────────────────────────────────────────────
+@pytest.mark.parametrize("pluriel,singulier", [
+    ("pomodori", "pomodoro"), ("patate", "patata"), ("carote", "carota"),
+    ("cipolle", "cipolla"), ("mele", "mela"), ("funghi", "fungo"),
+    ("pani", "pane"), ("pesci", "pesce"), ("uova", "uovo"),
+])
+def test_italian_plurals(pluriel, singulier):
+    assert normalize(pluriel, IT) == normalize(singulier, IT)
+
+
+def test_italian_drops_the_hardening_h():
+    """Le « h » de « funghi » ne sert qu'a durcir le g devant i : il dispara-t
+    quand la voyelle finale redevient o."""
+    assert normalize("funghi", IT) == "fungo"
+    assert normalize("amiche", IT) == "amica"
+
+
+def test_italian_singulars_in_e_are_protected():
+    """Beaucoup de singuliers finissent en « -e » : sans protection, la regle
+    « -e -> -a » en ferait « pesca », « carna », « latta »."""
+    for mot in ("pesce", "carne", "latte", "pane"):
+        assert normalize(mot, IT) == mot
+
+
+# ── Allemand ────────────────────────────────────────────────────────
+@pytest.mark.parametrize("pluriel,singulier", [
+    ("Tomaten", "Tomate"), ("Zwiebeln", "Zwiebel"), ("Kartoffeln", "Kartoffel"),
+    ("Bananen", "Banane"), ("Bohnen", "Bohne"), ("Eier", "Ei"),
+])
+def test_german_plurals(pluriel, singulier):
+    assert normalize(pluriel, DE) == normalize(singulier, DE)
+
+
+def test_german_umlauts_converge_for_free():
+    """Les tremas disparaissent au retrait des accents : « Äpfel » et
+    « Apfel » se rejoignent sans aucune regle de pluriel."""
+    assert normalize("Äpfel", DE) == normalize("Apfel", DE)
+
+
+def test_german_diminutives_are_invariable():
+    """« Hähnchen » finit par « en » mais est deja au singulier."""
+    assert normalize("Hähnchen", DE) == "hahnchen"
+
+
+@pytest.mark.parametrize("mot", ["butter", "wasser", "zucker", "kase", "reis"])
+def test_german_invariables(mot):
+    assert normalize(mot, DE) == mot

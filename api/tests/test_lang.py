@@ -65,8 +65,12 @@ def auth(ec_keys, lang: str | None = None):
     ("fr", FR),
     ("en-GB,en;q=0.9", EN),
     ("fr-BE,fr;q=0.9,en;q=0.8", FR),
-    ("de-DE,de;q=0.9,en;q=0.8", EN),   # allemand ignoré, anglais retenu
-    ("de", FR),                         # aucune langue connue -> référence
+    ("de-DE,de;q=0.9,en;q=0.8", "de"),
+    ("pt-BR,pt;q=0.9", "pt"),
+    ("it-IT", "it"),
+    ("es-419,es;q=0.9", "es"),
+    ("ja-JP,ja;q=0.9,en;q=0.8", EN),  # japonais inconnu, anglais retenu
+    ("ja", FR),                        # aucune langue connue -> référence
     ("", FR),
     (None, FR),
 ])
@@ -78,7 +82,23 @@ def test_the_clause_is_empty_in_french():
     """Le français est la langue d'origine des prompts : rien à ajouter, et le
     préfixe mis en cache reste identique à ce qu'il était."""
     assert output_clause(FR) == ""
-    assert "anglais" in output_clause(EN)
+
+
+@pytest.mark.parametrize("code,mot", [
+    ("en", "anglais"),
+    ("es", "espagnol"),
+    ("pt", "portugais"),
+    ("it", "italien"),
+    ("de", "allemand"),
+])
+def test_each_language_has_its_clause(code, mot):
+    assert mot in output_clause(code)
+
+
+def test_an_unknown_language_adds_nothing():
+    """Mieux vaut répondre en français que d'envoyer une consigne vide de sens
+    au modèle."""
+    assert output_clause("ja") == ""
 
 
 # ── La langue arrive jusqu'au service ───────────────────────────────

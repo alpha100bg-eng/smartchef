@@ -1,0 +1,267 @@
+/**
+ * Français — langue de référence.
+ *
+ * `Key` dérive de cet objet : une clé ajoutée ici sans sa traduction dans les
+ * autres langues fait échouer la compilation, ce qui est exactement le rappel
+ * qu'on veut.
+ *
+ * `{n}` est remplacé à l'exécution par `t(key, { n })`.
+ */
+
+export const fr = {
+  // ── Commun ──────────────────────────────────────────────────────
+  "common.cancel": "Annuler",
+  "common.close": "Fermer",
+  "common.delete": "Supprimer",
+  "common.retry": "Réessayer",
+  "common.later": "Plus tard",
+  "common.send": "Envoyer",
+  "common.continue": "Continuer",
+  "common.optional": "optionnel",
+
+  // ── Entrée dans l'app ───────────────────────────────────────────
+  "login.tagline": "Photographie ton frigo, on s'occupe du reste.",
+  "login.step1.title": "Photographie ton frigo",
+  "login.step1.text":
+    "L'app reconnaît les aliments et estime combien de temps ils tiennent.",
+  "login.step2.title": "Reçois des recettes",
+  "login.step2.text":
+    "Des idées avec ce que tu as déjà, en priorisant ce qui périme bientôt.",
+  "login.step3.title": "Ne rachète rien en double",
+  "login.step3.text": "La liste de courses retire ce qui est encore dans ton frigo.",
+  "login.start": "Commencer gratuitement",
+  "login.reassure": "Sans installation, sans carte bancaire.",
+  "login.haveAccount": "J'ai déjà un compte",
+  "login.whatIsIt": "← C'est quoi SmartChef ?",
+  "login.email": "Email",
+  "login.password": "Mot de passe",
+  "login.signIn": "Se connecter",
+  "login.signUp": "Créer un compte",
+  "login.toSignUp": "Pas de compte ? Créer un compte",
+  "login.toSignIn": "Déjà un compte ? Se connecter",
+
+  // ── Accueil d'un nouvel inscrit ─────────────────────────────────
+  "onboarding.trialTitle": "7 jours offerts",
+  "onboarding.trialSub": "Tout est ouvert, sans carte bancaire.",
+  "onboarding.perk1": "Photographie ton frigo, l'app reconnaît les aliments",
+  "onboarding.perk2": "Le plan de la semaine, composé avec ce que tu as",
+  "onboarding.perk3": "La liste de courses, sans racheter ce que tu possèdes",
+  "onboarding.go": "C'est parti",
+  "onboarding.title": "Une seule question",
+  "onboarding.sub":
+    "Pour ne jamais te proposer quelque chose que tu ne peux pas manger.",
+  "onboarding.diet": "Ton régime",
+  "onboarding.allergies": "Des allergies ?",
+  "onboarding.otherAllergy": "Autre allergie (séparées par une virgule)",
+  "onboarding.finish": "Scanner mon frigo",
+  "onboarding.editable": "Modifiable à tout moment dans ton profil.",
+  "onboarding.expired": "Session expirée, reconnectez-vous.",
+
+  // ── Frigo ───────────────────────────────────────────────────────
+  "inventory.title": "Mon frigo",
+  "inventory.empty": "Rien pour l'instant",
+  "inventory.count": "{n} aliment",
+  "inventory.countPlural": "{n} aliments",
+  "inventory.emptyTitle": "Commence par une photo",
+  "inventory.emptyBody":
+    "Prends ton frigo en photo, on identifie les aliments pour toi.",
+  "inventory.scan": "Scanner mon frigo",
+  "inventory.analysing": "Analyse de la photo…",
+  "inventory.detected": "{n} aliment détecté",
+  "inventory.detectedPlural": "{n} aliments détectés",
+  "inventory.review": "Vérifie et corrige avant d'ajouter.",
+  "inventory.name": "Nom",
+  "inventory.qty": "Qté",
+  "inventory.expiry": "Date de péremption (AAAA-MM-JJ)",
+  "inventory.expiryHint":
+    "Estimation de conservation — corrige si tu connais la vraie date.",
+  "inventory.brand": "Marque (optionnel)",
+  "inventory.addRow": "Ajouter un article",
+  "inventory.save": "Valider et ajouter à l'inventaire",
+  "inventory.doubtful": "à vérifier",
+  "inventory.urgent": "{n} aliment à consommer rapidement",
+  "inventory.urgentPlural": "{n} aliments à consommer rapidement",
+  "inventory.remove": "Retirer {name} de l'inventaire",
+  "inventory.errScan": "Échec de l'analyse",
+  "inventory.errSave": "Échec de l'enregistrement",
+  "inventory.errDelete": "Suppression impossible",
+  "inventory.errAlerts": "Échec de l'activation des alertes",
+  "inventory.alertsRefused": "Notifications refusées — active-les dans les réglages.",
+
+  // ── Allergènes proposés en un appui ─────────────────────────────
+  "allergen.peanut": "Arachide",
+  "allergen.nuts": "Fruits à coque",
+  "allergen.lactose": "Lactose",
+  "allergen.gluten": "Gluten",
+  "allergen.egg": "Œuf",
+  "allergen.fish": "Poisson",
+  "allergen.shellfish": "Crustacés",
+  "allergen.soy": "Soja",
+  "allergen.add": "Ajouter l'allergie {name}",
+  "allergen.rm": "Retirer l'allergie {name}",
+
+  // ── Régimes ─────────────────────────────────────────────────────
+  "diet.omnivore": "Omnivore",
+  "diet.vegetarian": "Végétarien",
+  "diet.vegan": "Végan",
+  "diet.glutenfree": "Sans gluten",
+
+  // ── Unités ──────────────────────────────────────────────────────
+  "unit.piece": "pièce",
+
+  // ── Péremption ──────────────────────────────────────────────────
+  "expiry.today": "à consommer aujourd'hui",
+  "expiry.tomorrow": "demain",
+  "expiry.inDays": "dans {n} jours",
+  "expiry.yesterday": "périmé d'hier",
+  "expiry.sinceDays": "périmé depuis {n} j",
+
+  // ── Recherche ───────────────────────────────────────────────────
+  "search.title": "Qu'est-ce que je cuisine ?",
+  "search.placeholder": "ex. italien ce soir, moins de 20 min…",
+  "search.go": "Chercher",
+  "search.run": "Lancer la recherche",
+  "search.searching": "Recherche de recettes…",
+  "search.emptyTitle": "Dis-moi ton envie",
+  "search.emptyBody": "Je propose des recettes avec ce que tu as déjà.",
+  "search.noResult": "Aucune recette trouvée",
+  "search.rephrase": "Essaie de reformuler ta demande.",
+  "search.writing": "Écriture de la recette…",
+  "search.ingredients": "Ingrédients",
+  "search.ingredientsShort": "ingrédients",
+  "search.steps": "Préparation",
+  "search.minutes": "min",
+  "search.servings": "pers.",
+  "search.keep": "Garder cette recette",
+  "search.kept": "Gardée",
+  "search.savedHead": "Tes recettes gardées",
+  "search.forget": "Ne plus garder",
+  "search.errSearch": "Échec de la recherche",
+  "search.errDetail": "Impossible de charger la recette",
+  "search.errKeep": "Impossible de garder cette recette",
+  "search.errForget": "Suppression impossible",
+  "search.forgetLabel": "Retirer {title} des recettes gardées",
+  "search.keptLabel": "{title} est gardée",
+  "search.chip1": "Rapide ce soir",
+  "search.chip2": "Moins de 20 min",
+  "search.chip3": "Végétarien",
+  "search.chip4": "Avec mon frigo",
+
+  // ── Semaine ─────────────────────────────────────────────────────
+  "plan.title": "Ma semaine",
+  "plan.generating": "Génération du plan…",
+  "plan.wait": "Une trentaine de secondes.",
+  "plan.emptyTitle": "Sept jours, zéro question",
+  "plan.emptyBody":
+    "Je compose ta semaine à partir de ton frigo, ton budget et ton régime.",
+  "plan.generate": "Générer ma semaine",
+  "plan.regenerate": "Regénérer la semaine",
+  "plan.budget": "Budget de la semaine (optionnel)",
+  "plan.budgetLabel": "Budget hebdomadaire en euros",
+  "plan.cost": "Coût estimé : {cost} €",
+  "plan.costBudget": "Coût estimé : {cost} € / budget {budget} €",
+  "plan.breakfast": "Petit-déj",
+  "plan.lunch": "Déjeuner",
+  "plan.dinner": "Dîner",
+  "plan.snack": "Collation",
+  "plan.noSteps": "Préparation indisponible.",
+  "plan.errGenerate": "Échec de la génération",
+  "plan.errSteps": "Impossible de charger la préparation",
+
+  // ── Courses ─────────────────────────────────────────────────────
+  "shopping.title": "Mes courses",
+  "shopping.building": "Construction de la liste…",
+  "shopping.emptyTitle": "Rien à racheter en double",
+  "shopping.emptyBody": "Je pars de ton plan de repas et je retire ce que tu as déjà.",
+  "shopping.generate": "Générer la liste",
+  "shopping.regenerate": "Regénérer la liste",
+  "shopping.estimate": "Estimation",
+  "shopping.checked": "Cochés",
+  "shopping.inFridge": "Déjà dans ton frigo (à vérifier)",
+  "shopping.readd": "+ ajouter",
+  "shopping.store": "J'ai fait mes courses ({n})",
+  "shopping.storing": "Rangement…",
+  "shopping.stored": "{n} article ajouté à ton frigo",
+  "shopping.storedPlural": "{n} articles ajoutés à ton frigo",
+  "shopping.needPlan": "Génère d'abord un plan de repas.",
+  "shopping.errGenerate": "Échec de la génération",
+  "shopping.errCheck": "La coche n'a pas pu être enregistrée.",
+  "shopping.errStore": "Impossible de ranger les courses",
+  "shopping.toSort": "À ranger",
+  "shopping.check": "Cocher {name}",
+  "shopping.uncheck": "Décocher {name}",
+
+  // ── Rayons ──────────────────────────────────────────────────────
+  "aisle.produce": "Fruits et légumes",
+  "aisle.dairy": "Produits laitiers",
+  "aisle.meat": "Viande et poisson",
+  "aisle.grocery": "Épicerie",
+  "aisle.frozen": "Surgelés",
+  "aisle.bakery": "Boulangerie",
+  "aisle.other": "Autres",
+
+  // ── J'ai cuisiné ça ─────────────────────────────────────────────
+  "cooked.button": "J'ai cuisiné ça",
+  "cooked.label": "Marquer cette recette comme cuisinée",
+  "cooked.question": "Qu'est-ce que tu as fini ?",
+  "cooked.remove": "Retirer de mon frigo",
+  "cooked.done": "Frigo mis à jour",
+  "cooked.nothing": "Rien à retirer",
+
+  // ── Profil ──────────────────────────────────────────────────────
+  "profile.title": "Profil",
+  "profile.budget": "Budget hebdo",
+  "profile.timePerMeal": "Temps par repas",
+  "profile.diet": "Régime",
+  "profile.goals": "Objectifs",
+  "profile.allergies": "Allergies",
+  "profile.noAllergy": "aucune",
+  "profile.signOut": "Se déconnecter",
+  "profile.signOutLabel": "Se déconnecter de l'application",
+  "profile.errSignOut": "Échec de la déconnexion",
+  "profile.language": "Langue",
+
+  // ── Premium ─────────────────────────────────────────────────────
+  "premium.active": "Premium actif — merci !",
+  "premium.upgrade": "Passer en Premium",
+  "premium.yourTrial": "Ton essai",
+  "premium.perMonth": "/mois",
+  "premium.daysLeft": "Accès complet encore {n} jours",
+  "premium.lastDay": "Dernier jour d'accès complet",
+  "premium.remaining": "Ce qu'il te reste ce mois-ci.",
+  "premium.scans": "scans",
+  "premium.searches": "recherches",
+  "premium.willLose": "Ce que tu perdras à la fin de l'essai",
+  "premium.withPremium": "Avec Premium",
+  "premium.perk1": "Le plan de la semaine, 8 par mois",
+  "premium.perk2": "La liste de courses par rayon",
+  "premium.perk3": "100 scans et 300 recherches par mois",
+  "premium.subscribe": "S'abonner",
+  "premium.keepAccess": "Garder l'accès complet",
+  "premium.soon": "Le paiement arrive bientôt.",
+  "premium.errCheckout": "Impossible d'ouvrir le paiement",
+  "premium.discover": "Découvrir Premium",
+  "premium.planLocked":
+    "Le plan de la semaine compose tes sept jours à partir de ton frigo, de ton budget et de ton régime. Il fait partie de Premium.",
+  "premium.shoppingLocked":
+    "La liste se construit à partir de ton plan de repas, rangée par rayon, en retirant ce que tu as déjà. Elle fait partie de Premium, comme le plan.",
+
+  // ── Avis ────────────────────────────────────────────────────────
+  "feedback.open": "Donner mon avis",
+  "feedback.openAgain": "Donner un nouvel avis",
+  "feedback.label": "Donner mon avis sur l'application",
+  "feedback.title": "Ton avis",
+  "feedback.hint": "Sois franc, c'est plus utile que d'être gentil.",
+  "feedback.liked": "Qu'est-ce qui t'a plu ?",
+  "feedback.missing": "Qu'est-ce qui t'a manqué ou agacé ?",
+  "feedback.rate": "Mettre la note de {n} sur 5",
+  "feedback.needRating": "Choisis une note",
+  "feedback.thanks": "Merci — c'est noté.",
+  "feedback.errSend": "Envoi impossible",
+
+  // ── Erreur générale ─────────────────────────────────────────────
+  "error.title": "Quelque chose s'est mal passé",
+  "error.session": "Session expirée — reconnecte-toi.",
+  "error.unreachable": "Impossible de joindre le serveur. Réessaie dans un instant.",
+  "error.server": "Le serveur a répondu {code}.",
+} as const;

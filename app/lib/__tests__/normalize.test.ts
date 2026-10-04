@@ -95,6 +95,48 @@ describe("espagnol", () => {
   });
 });
 
+describe("portugais", () => {
+  test.each([
+    ["tomates", "tomate"], ["bananas", "banana"], ["ovos", "ovo"],
+    ["limoes", "limao"], ["paes", "pao"], ["flores", "flor"],
+  ])("%s → %s", (p, s) => {
+    expect(normalize(p, "pt")).toBe(normalize(s, "pt"));
+  });
+});
+
+describe("italien", () => {
+  test.each([
+    ["pomodori", "pomodoro"], ["patate", "patata"], ["carote", "carota"],
+    ["funghi", "fungo"], ["pani", "pane"], ["pesci", "pesce"],
+  ])("%s → %s", (p, s) => {
+    expect(normalize(p, "it")).toBe(normalize(s, "it"));
+  });
+
+  test("les singuliers en -e sont proteges", () => {
+    // Sans protection, la regle -e → -a ferait « pesca », « carna ».
+    for (const mot of ["pesce", "carne", "latte", "pane"]) {
+      expect(normalize(mot, "it")).toBe(mot);
+    }
+  });
+});
+
+describe("allemand", () => {
+  test.each([
+    ["Tomaten", "Tomate"], ["Zwiebeln", "Zwiebel"],
+    ["Kartoffeln", "Kartoffel"], ["Bananen", "Banane"], ["Eier", "Ei"],
+  ])("%s → %s", (p, s) => {
+    expect(normalize(p, "de")).toBe(normalize(s, "de"));
+  });
+
+  test("les tremas convergent sans regle", () => {
+    expect(normalize("Äpfel", "de")).toBe(normalize("Apfel", "de"));
+  });
+
+  test("les diminutifs restent intacts", () => {
+    expect(normalize("Hähnchen", "de")).toBe("hahnchen");
+  });
+});
+
 test("chaque langue casserait les mots de l'autre", () => {
   // La raison d'être du découpage par langue.
   expect(normalize("potatoes", "fr")).not.toBe(normalize("potato", "fr"));

@@ -15,7 +15,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { STRINGS, type Key } from "./strings";
 
-export type Lang = "fr" | "en" | "es";
+export type Lang = "fr" | "en" | "es" | "pt" | "it" | "de";
+
+/** Les codes reconnus, dans l ordre d apparition du selecteur. */
+export const LANGS: readonly Lang[] = ["fr", "en", "es", "pt", "it", "de"];
 
 const CLEF = "smartchef_lang";
 
@@ -25,8 +28,8 @@ function langueAppareil(): Lang {
   try {
     const n =
       typeof navigator !== "undefined" ? navigator.language ?? "" : "";
-    const code = n.toLowerCase().slice(0, 2);
-    return code === "en" || code === "es" ? code : "fr";
+    const code = n.toLowerCase().slice(0, 2) as Lang;
+    return LANGS.includes(code) ? code : "fr";
   } catch {
     return "fr";
   }
@@ -43,8 +46,8 @@ export function currentLang(): Lang {
 export async function initLang(): Promise<void> {
   try {
     const stocke = await AsyncStorage.getItem(CLEF);
-    if (stocke === "fr" || stocke === "en" || stocke === "es") {
-      courante = stocke;
+    if (stocke && LANGS.includes(stocke as Lang)) {
+      courante = stocke as Lang;
       abonnes.forEach((f) => f(courante));
     }
   } catch {
