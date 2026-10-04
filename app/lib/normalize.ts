@@ -34,6 +34,10 @@ const INVARIABLES: Record<Lang, Set<string>> = {
     "caffe", "te", "brodo", "riso", "olio", "miele", "pane", "latte",
     "pesce", "carne", "dolce", "sale", "farine", "pepe", "aceto",
   ]),
+  // L'arabe n'a aucune regle de pluriel derivable : les pluriels brises
+  // changent l'interieur du mot. L'ensemble reste vide, la couche semantique
+  // prend le relais.
+  ar: new Set<string>(),
   de: new Set([
     "reis", "brot", "kase", "butter", "wasser", "zucker", "mehl", "milch",
     "fleisch", "gemuse", "obst", "salz", "ol", "honig", "joghurt",
@@ -185,6 +189,19 @@ function singulariserDe(w: string): string {
   return w;
 }
 
+/**
+ * Arabe. Aucune singularisation : les pluriels brises (كتاب -> كتب) changent
+ * la structure interne du mot, aucune regle ne les derive. La couche
+ * semantique tranche a la place.
+ *
+ * Restent trois normalisations sures, appliquees dans  :
+ * retrait des diacritiques, unification des formes de l'alef, et retrait de
+ * l'article defini ال.
+ */
+function singulariserAr(w: string): string {
+  return w;
+}
+
 const SINGULARISEURS: Record<Lang, (w: string) => string> = {
   fr: singulariserFr,
   en: singulariserEn,
@@ -192,9 +209,24 @@ const SINGULARISEURS: Record<Lang, (w: string) => string> = {
   pt: singulariserPt,
   it: singulariserIt,
   de: singulariserDe,
+  ar: singulariserAr,
 };
 
+/** Formes de l'alef et de la ya ramenees a une seule, et article defini
+ * retire : « الطماطم » et « طماطم » designent le meme aliment. */
+function normaliserArabe(s: string): string {
+  return s
+    .replace(/[ً-ْٰ]/g, "")   // diacritiques (harakat)
+    .replace(/[آأإ]/g, "ا") // آ أ إ -> ا
+    .replace(/ى/g, "ي")              // ى -> ي
+    .replace(/ة/g, "ه")              // ة -> ه
+    .split(/\s+/)
+    .map((m) => (m.startsWith("ال") && m.length > 4 ? m.slice(2) : m))
+    .join(" ");
+}
+
 export function normalize(name: string, lang: Lang = currentLang()): string {
+  if (lang === "ar") return normaliserArabe(name.trim());
   const singulariser = SINGULARISEURS[lang] ?? singulariserFr;
   return stripAccents(name.toLowerCase())
     .trim()

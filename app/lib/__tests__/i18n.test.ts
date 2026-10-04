@@ -5,7 +5,7 @@
  * mauvaise langue ou avec un marqueur `{n}` resté brut.
  */
 import { STRINGS } from "../strings";
-import { currentLang, setLang, t } from "../i18n";
+import { LANGS, currentLang, isRTL, setLang, t } from "../i18n";
 
 afterEach(async () => {
   await setLang("fr");
@@ -76,4 +76,50 @@ test("les marqueurs sont les mêmes dans les deux langues", () => {
     }
   }
   expect(incoherentes).toEqual([]);
+});
+
+
+test("seul l'arabe s'ecrit de droite a gauche", () => {
+  expect(isRTL("ar")).toBe(true);
+  for (const l of LANGS.filter((x) => x !== "ar")) {
+    expect(isRTL(l)).toBe(false);
+  }
+});
+
+test("passer en arabe retourne le document", async () => {
+  // Ces tests tournent sans DOM : on en pose un minimal pour observer ce que
+  // le module écrit. C'est aussi la preuve que le garde `typeof document`
+  // n'est pas décoratif — sans lui, tout changement de langue planterait ici.
+  const attributs: Record<string, string> = {};
+  (globalThis as any).document = {
+    documentElement: {
+      setAttribute: (k: string, v: string) => {
+        attributs[k] = v;
+      },
+    },
+  };
+
+  try {
+    await setLang("ar");
+    expect(attributs.dir).toBe("rtl");
+    expect(attributs.lang).toBe("ar");
+
+    await setLang("fr");
+    expect(attributs.dir).toBe("ltr");
+  } finally {
+    delete (globalThis as any).document;
+  }
+});
+
+test("changer de langue ne plante pas sans DOM", async () => {
+  // Cas réel en React Native natif : pas de document du tout.
+  expect((globalThis as any).document).toBeUndefined();
+  await expect(setLang("ar")).resolves.toBeUndefined();
+  expect(isRTL()).toBe(true);
+});
+
+test("les sept langues sont traduites", () => {
+  for (const l of LANGS) {
+    expect(Object.keys(STRINGS[l]).length).toBe(Object.keys(STRINGS.fr).length);
+  }
 });

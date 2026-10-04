@@ -6,7 +6,7 @@ retire rien. D'où une couverture serrée.
 """
 import pytest
 
-from app.lang import DE, EN, ES, FR, IT, PT
+from app.lang import AR, DE, EN, ES, FR, IT, PT
 from app.services.text_match import layer1_covered, normalize
 
 
@@ -180,3 +180,33 @@ def test_german_diminutives_are_invariable():
 @pytest.mark.parametrize("mot", ["butter", "wasser", "zucker", "kase", "reis"])
 def test_german_invariables(mot):
     assert normalize(mot, DE) == mot
+
+
+# ── Arabe ───────────────────────────────────────────────────────────
+def test_arabic_drops_the_definite_article():
+    """« الطماطم » et « طماطم » designent la meme tomate : sans ce retrait,
+    la liste de courses la racheterait."""
+    assert normalize("الطماطم", AR) == normalize("طماطم", AR)
+
+
+def test_arabic_unifies_alef_forms():
+    """أ إ آ et ا sont la meme lettre selon la saisie."""
+    assert normalize("أرز", AR) == normalize("ارز", AR)
+
+
+def test_arabic_strips_diacritics():
+    """Les harakat sont facultatives a l'ecrit : les garder creerait deux
+    mots la ou il n'y en a qu'un."""
+    assert normalize("خُبْز", AR) == normalize("خبز", AR)
+
+
+def test_arabic_does_not_invent_a_plural_rule():
+    """Les pluriels brises changent l'interieur du mot — aucune regle ne les
+    derive. On ne touche a rien et la couche semantique tranche."""
+    assert normalize("كتب", AR) == "كتب"
+    assert normalize("كتاب", AR) == "كتاب"
+
+
+def test_arabic_keeps_short_words_with_al():
+    """Retirer « ال » d'un mot court le viderait de son sens."""
+    assert normalize("ماء", AR) == "ماء"

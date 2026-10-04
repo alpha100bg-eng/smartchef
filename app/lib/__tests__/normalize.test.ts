@@ -137,6 +137,27 @@ describe("allemand", () => {
   });
 });
 
+describe("arabe", () => {
+  test("l'article defini est retire", () => {
+    // « الطماطم » et « طماطم » designent la meme tomate.
+    expect(normalize("الطماطم", "ar")).toBe(normalize("طماطم", "ar"));
+  });
+
+  test("les formes de l'alef sont unifiees", () => {
+    expect(normalize("أرز", "ar")).toBe(normalize("ارز", "ar"));
+  });
+
+  test("les diacritiques sont retires", () => {
+    expect(normalize("خُبْز", "ar")).toBe(normalize("خبز", "ar"));
+  });
+
+  test("aucune regle de pluriel n'est inventee", () => {
+    // Les pluriels brises changent l'interieur du mot : on ne touche a rien.
+    expect(normalize("كتب", "ar")).toBe("كتب");
+    expect(normalize("كتاب", "ar")).toBe("كتاب");
+  });
+});
+
 test("chaque langue casserait les mots de l'autre", () => {
   // La raison d'être du découpage par langue.
   expect(normalize("potatoes", "fr")).not.toBe(normalize("potato", "fr"));

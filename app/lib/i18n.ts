@@ -11,14 +11,54 @@
  * de l'onglet Frigo.
  */
 import { useEffect, useState } from "react";
+import { I18nManager } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { STRINGS, type Key } from "./strings";
 
-export type Lang = "fr" | "en" | "es" | "pt" | "it" | "de";
+export type Lang = "fr" | "en" | "es" | "pt" | "it" | "de" | "ar";
 
 /** Les codes reconnus, dans l ordre d apparition du selecteur. */
-export const LANGS: readonly Lang[] = ["fr", "en", "es", "pt", "it", "de"];
+export const LANGS: readonly Lang[] = ["fr", "en", "es", "pt", "it", "de", "ar"];
+
+/** Langues écrites de droite à gauche. */
+const RTL: readonly Lang[] = ["ar"];
+
+export function isRTL(l: Lang = courante): boolean {
+  return RTL.includes(l);
+}
+
+/**
+ * Bascule le sens de lecture.
+ *
+ * Sur le web, `dir="rtl"` sur le document retourne la page et suffit à
+ * react-native-web pour inverser les dispositions en ligne. `I18nManager`
+ * garde l'état cohérent côté React Native, ce qui comptera le jour où l'app
+ * sera compilée en natif.
+ *
+ * Volontairement sans rechargement : React Native natif exige normalement un
+ * redémarrage pour appliquer le RTL, mais l'app tourne aujourd'hui sur le web
+ * où le changement est immédiat. Imposer un rechargement pénaliserait les six
+ * autres langues pour un cas qui n'existe pas encore.
+ */
+function appliquerSens(l: Lang): void {
+  const rtl = RTL.includes(l);
+  try {
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("dir", rtl ? "rtl" : "ltr");
+      document.documentElement.setAttribute("lang", l);
+    }
+  } catch {
+    // Pas de DOM (natif) : I18nManager ci-dessous suffit.
+  }
+  try {
+    I18nManager.allowRTL(rtl);
+    if (I18nManager.isRTL !== rtl) I18nManager.forceRTL(rtl);
+  } catch {
+    // Certaines plateformes refusent le changement a chaud : la langue
+    // s'applique quand meme, seule la disposition reste inchangee.
+  }
+}
 
 const CLEF = "smartchef_lang";
 
@@ -48,6 +88,7 @@ export async function initLang(): Promise<void> {
     const stocke = await AsyncStorage.getItem(CLEF);
     if (stocke && LANGS.includes(stocke as Lang)) {
       courante = stocke as Lang;
+      appliquerSens(courante);
       abonnes.forEach((f) => f(courante));
     }
   } catch {
@@ -57,6 +98,7 @@ export async function initLang(): Promise<void> {
 
 export async function setLang(l: Lang): Promise<void> {
   courante = l;
+  appliquerSens(l);
   abonnes.forEach((f) => f(l));
   try {
     await AsyncStorage.setItem(CLEF, l);

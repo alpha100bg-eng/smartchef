@@ -10,7 +10,8 @@ import { es } from "./es";
 import { pt } from "./pt";
 import { it } from "./it";
 import { de } from "./de";
+import { ar } from "./ar";
 
 export type Key = keyof typeof fr;
 
-export const STRINGS = { fr, en, es, pt, it, de } as const;
+export const STRINGS = { fr, en, es, pt, it, de, ar } as const;

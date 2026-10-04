@@ -23,6 +23,7 @@ const LANGUES = {
   pt: "Português",
   it: "Italiano",
   de: "Deutsch",
+  ar: "العربية",
 } as const;
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 

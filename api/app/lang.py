@@ -13,7 +13,8 @@ ES = "es"
 PT = "pt"
 IT = "it"
 DE = "de"
-SUPPORTED = (FR, EN, ES, PT, IT, DE)
+AR = "ar"
+SUPPORTED = (FR, EN, ES, PT, IT, DE, AR)
 
 
 def parse(accept_language: str | None) -> str:
@@ -69,6 +70,12 @@ _CLAUSES = {
         "italien",
         "Utilise les habitudes culinaires italiennes et les noms de produits "
         "courants en Italie.",
+    ),
+    AR: _clause(
+        "arabe standard moderne",
+        "Utilise des noms d'aliments et des habitudes culinaires familiers au "
+        "Moyen-Orient et en Afrique du Nord. Chiffres en chiffres arabes "
+        "occidentaux (0-9).",
     ),
     DE: _clause(
         "allemand",

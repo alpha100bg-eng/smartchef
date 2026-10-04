@@ -13,7 +13,7 @@ Jumeau JS : `app/lib/normalize.ts` — garder les deux en phase.
 """
 import unicodedata
 
-from app.lang import DE, EN, ES, FR, IT, PT
+from app.lang import AR, DE, EN, ES, FR, IT, PT
 
 # Noms dont le singulier et le pluriel sont identiques.
 INVARIABLES = {
@@ -233,8 +233,32 @@ _SINGULARIZERS = {
 }
 
 
+# Diacritiques arabes (harakat) et variantes de lettres a unifier.
+_AR_HARAKAT = dict.fromkeys(range(0x064B, 0x0653))
+_AR_HARAKAT[0x0670] = None
+_AR_LETTRES = {0x0622: 0x0627, 0x0623: 0x0627, 0x0625: 0x0627,
+               0x0649: 0x064A, 0x0629: 0x0647}
+
+
+def _normalize_ar(name: str) -> str:
+    """Arabe.
+
+    Aucune singularisation : les pluriels brises changent l'interieur du mot
+    et aucune regle ne les derive — la couche semantique tranche a leur
+    place. Restent trois normalisations sures : retrait des diacritiques,
+    unification des formes de l'alef et de la ya, et retrait de l'article
+    defini "al" qui distingue inutilement les memes aliments.
+    """
+    s = name.strip().translate(_AR_HARAKAT).translate(_AR_LETTRES)
+    mots = [m[2:] if m.startswith("ال") and len(m) > 4 else m
+            for m in s.split()]
+    return " ".join(m for m in mots if m)
+
+
 def normalize(name: str, lang: str = FR) -> str:
     """Lowercase, strip accents, collapse spaces, prudent-singularize each word."""
+    if lang == AR:
+        return _normalize_ar(name)
     singularize = _SINGULARIZERS.get(lang, _singularize_fr)
     s = strip_accents(name.lower()).strip()
     words = [singularize(w) for w in s.split()]
