@@ -188,6 +188,7 @@ export const pt: Record<Key, string> = {
   "cooked.remove": "Tirar da minha geladeira",
   "cooked.done": "Geladeira atualizada",
   "cooked.nothing": "Nada para tirar",
+  "cooked.readError": "Não foi possível ler sua geladeira",
 
   "profile.title": "Perfil",
   "profile.budget": "Orçamento semanal",

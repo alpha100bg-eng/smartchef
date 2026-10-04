@@ -207,6 +207,7 @@ export const fr = {
   "cooked.remove": "Retirer de mon frigo",
   "cooked.done": "Frigo mis à jour",
   "cooked.nothing": "Rien à retirer",
+  "cooked.readError": "Impossible de lire ton frigo",
 
   // ── Profil ──────────────────────────────────────────────────────
   "profile.title": "Profil",

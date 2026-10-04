@@ -190,6 +190,7 @@ export const de: Record<Key, string> = {
   "cooked.remove": "Aus meinem Kühlschrank nehmen",
   "cooked.done": "Kühlschrank aktualisiert",
   "cooked.nothing": "Nichts zu entfernen",
+  "cooked.readError": "Dein Kühlschrank konnte nicht gelesen werden",
 
   "profile.title": "Profil",
   "profile.budget": "Wochenbudget",

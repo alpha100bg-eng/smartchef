@@ -188,6 +188,7 @@ export const es: Record<Key, string> = {
   "cooked.remove": "Quitar de mi nevera",
   "cooked.done": "Nevera actualizada",
   "cooked.nothing": "Nada que quitar",
+  "cooked.readError": "No se pudo leer tu nevera",
 
   "profile.title": "Perfil",
   "profile.budget": "Presupuesto semanal",

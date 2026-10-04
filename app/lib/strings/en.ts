@@ -185,6 +185,7 @@ export const en: Record<Key, string> = {
   "cooked.remove": "Remove from my fridge",
   "cooked.done": "Fridge updated",
   "cooked.nothing": "Nothing to remove",
+  "cooked.readError": "Couldn't read your fridge",
 
   "profile.title": "Profile",
   "profile.budget": "Weekly budget",

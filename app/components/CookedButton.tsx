@@ -34,7 +34,7 @@ export function CookedButton({ usesInventory, onDone }: Props) {
       // Pre-checked: finishing what you cooked with is the common case.
       setSelected(Object.fromEntries(found.map((m) => [m.id, true])));
     } catch (e: any) {
-      setError(e.message ?? "Impossible de lire ton frigo");
+      setError(e.message ?? t("cooked.readError"));
     } finally {
       setBusy(false);
     }

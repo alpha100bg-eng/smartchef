@@ -187,6 +187,7 @@ export const ar: Record<Key, string> = {
   "cooked.remove": "إزالة من ثلاجتي",
   "cooked.done": "تم تحديث الثلاجة",
   "cooked.nothing": "لا شيء لإزالته",
+  "cooked.readError": "تعذرت قراءة محتويات ثلاجتك",
 
   "profile.title": "الملف الشخصي",
   "profile.budget": "الميزانية الأسبوعية",
