@@ -21,6 +21,8 @@ jest.mock("@/lib/supabase", () => ({
 }));
 jest.mock("expo-router", () => ({ useRouter: () => ({ replace: mockReplace }) }));
 
+import { setLang } from "@/lib/i18n";
+import { STRINGS } from "@/lib/strings";
 import Login from "../login";
 
 beforeEach(() => {
@@ -36,6 +38,21 @@ test("un visiteur voit ce que fait l'app, pas un formulaire", () => {
   expect(getByText("Reçois des recettes")).toBeTruthy();
   expect(getByText("Ne rachète rien en double")).toBeTruthy();
   expect(queryByPlaceholderText("Mot de passe")).toBeNull();
+}, 20000);
+
+test("l'accueil suit la langue choisie", async () => {
+  // Le bug vu en production : les textes de cet écran étaient construits au
+  // chargement du module, donc figés dans la langue de l'appareil avant même
+  // qu'initLang ait lu la préférence. Un visiteur arabophone lisait un écran
+  // anglais. Rendre APRÈS le changement de langue est ce qui l'attrape.
+  await setLang("ar");
+  try {
+    const { getByText } = render(<Login />);
+    expect(getByText(STRINGS.ar["login.tagline"])).toBeTruthy();
+    expect(getByText(STRINGS.ar["login.step1.title"])).toBeTruthy();
+  } finally {
+    await setLang("fr");
+  }
 }, 20000);
 
 test("« Commencer gratuitement » ouvre la création de compte", () => {

@@ -21,15 +21,18 @@ import {
 } from "@/lib/mealPlan";
 import { fetchBillingStatus, hasFullAccess } from "@/lib/billing";
 import { t, useLang } from "@/lib/i18n";
+import type { Key } from "@/lib/strings";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { CookedButton } from "@/components/CookedButton";
 import { PremiumGate } from "@/components/PremiumGate";
 
-const SLOT_LABELS: Record<string, string> = {
-  breakfast: t("plan.breakfast"),
-  lunch: t("plan.lunch"),
-  dinner: t("plan.dinner"),
-  snack: t("plan.snack"),
+// Des clés, pas des textes : ce module est chargé avant qu'initLang ait lu la
+// langue mémorisée, donc un `t` appelé ici figerait les libellés de repas.
+const SLOT_LABELS: Record<string, Key> = {
+  breakfast: "plan.breakfast",
+  lunch: "plan.lunch",
+  dinner: "plan.dinner",
+  snack: "plan.snack",
 };
 const SLOT_ICONS: Record<string, React.ComponentProps<typeof Ionicons>["name"]> = {
   breakfast: "sunny-outline",
@@ -201,7 +204,7 @@ export default function MealPlan() {
                         />
                       </View>
                       <View style={styles.entryBody}>
-                        <Text style={styles.slot}>{SLOT_LABELS[e.slot] ?? e.slot}</Text>
+                        <Text style={styles.slot}>{SLOT_LABELS[e.slot] ? t(SLOT_LABELS[e.slot]) : e.slot}</Text>
                         <Text style={styles.recipe}>{e.recipe.title}</Text>
                         {e.recipe.prep_time_min ? (
                           <Text style={styles.meta}>{e.recipe.prep_time_min} min</Text>

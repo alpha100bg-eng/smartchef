@@ -27,7 +27,11 @@ import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { CookedButton } from "@/components/CookedButton";
 
-const SUGGESTIONS = [t("search.chip1"), t("search.chip2"), t("search.chip3"), t("search.chip4")];
+// Des clés, pas des textes : ce module est chargé avant qu'initLang ait lu la
+// langue mémorisée, donc un `t` appelé ici figerait les suggestions.
+const SUGGESTIONS = [
+  "search.chip1", "search.chip2", "search.chip3", "search.chip4",
+] as const;
 
 export default function Search() {
   // Redessine cet ecran quand la langue change.
@@ -163,16 +167,19 @@ export default function Search() {
 
       {recipes === null && !loading && (
         <View style={styles.chips}>
-          {SUGGESTIONS.map((s) => (
+          {SUGGESTIONS.map((cle) => (
             <Pressable
-              key={s}
+              key={cle}
               style={styles.chip}
               onPress={() => {
-                setQuery(s);
-                run(s);
+                // La recherche part dans la langue affichée : c'est ce que
+                // l'utilisateur a lu sur la puce, et ce que l'IA doit recevoir.
+                const texte = t(cle);
+                setQuery(texte);
+                run(texte);
               }}
             >
-              <Text style={styles.chipText}>{s}</Text>
+              <Text style={styles.chipText}>{t(cle)}</Text>
             </Pressable>
           ))}
         </View>

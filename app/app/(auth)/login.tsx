@@ -5,29 +5,22 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { supabase } from "@/lib/supabase";
 import { t, useLang } from "@/lib/i18n";
+import type { Key } from "@/lib/strings";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 /** Les trois gestes de l'app, dans l'ordre où on les fait. */
+// On stocke les clés, pas les textes : ce tableau est construit au chargement
+// du module, avant qu'initLang ait lu la langue mémorisée. Appeler `t` ici
+// figerait l'écran dans la langue de l'appareil, et il ne suivrait plus aucun
+// changement de langue.
 const ETAPES: {
   icon: React.ComponentProps<typeof Ionicons>["name"];
-  titre: string;
-  texte: string;
+  titre: Key;
+  texte: Key;
 }[] = [
-  {
-    icon: "camera-outline",
-    titre: t("login.step1.title"),
-    texte: t("login.step1.text"),
-  },
-  {
-    icon: "restaurant-outline",
-    titre: t("login.step2.title"),
-    texte: t("login.step2.text"),
-  },
-  {
-    icon: "cart-outline",
-    titre: t("login.step3.title"),
-    texte: t("login.step3.text"),
-  },
+  { icon: "camera-outline", titre: "login.step1.title", texte: "login.step1.text" },
+  { icon: "restaurant-outline", titre: "login.step2.title", texte: "login.step2.text" },
+  { icon: "cart-outline", titre: "login.step3.title", texte: "login.step3.text" },
 ];
 
 export default function Login() {
@@ -74,9 +67,7 @@ export default function Login() {
         <Ionicons name="leaf" size={32} color={colors.onPrimary} />
       </View>
       <Text style={styles.title}>SmartChef</Text>
-      <Text style={styles.tagline}>
-        Photographie ton frigo, on s'occupe du reste.
-      </Text>
+      <Text style={styles.tagline}>{t("login.tagline")}</Text>
     </View>
   );
 
@@ -97,8 +88,8 @@ export default function Login() {
                 <Ionicons name={e.icon} size={20} color={colors.primaryDark} />
               </View>
               <View style={styles.stepBody}>
-                <Text style={styles.stepTitle}>{e.titre}</Text>
-                <Text style={styles.stepText}>{e.texte}</Text>
+                <Text style={styles.stepTitle}>{t(e.titre)}</Text>
+                <Text style={styles.stepText}>{t(e.texte)}</Text>
               </View>
             </View>
           ))}
