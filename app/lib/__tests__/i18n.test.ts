@@ -5,7 +5,7 @@
  * mauvaise langue ou avec un marqueur `{n}` resté brut.
  */
 import { STRINGS } from "../strings";
-import { LANGS, currentLang, isRTL, setLang, t } from "../i18n";
+import { LANGS, currentLang, initLang, isRTL, setLang, t } from "../i18n";
 
 afterEach(async () => {
   await setLang("fr");
@@ -116,6 +116,29 @@ test("changer de langue ne plante pas sans DOM", async () => {
   expect((globalThis as any).document).toBeUndefined();
   await expect(setLang("ar")).resolves.toBeUndefined();
   expect(isRTL()).toBe(true);
+});
+
+test("le demarrage applique le sens meme sans choix memorise", async () => {
+  // Le cas qui manquait : un appareil regle en arabe, aucune preference
+  // enregistree. La langue venait bien de l'appareil, mais la page restait
+  // de gauche a droite jusqu'au premier passage par le selecteur.
+  const attributs: Record<string, string> = {};
+  (globalThis as any).document = {
+    documentElement: {
+      setAttribute: (k: string, v: string) => {
+        attributs[k] = v;
+      },
+    },
+  };
+
+  try {
+    await setLang("ar"); // simule une langue courante arabe
+    attributs.dir = "";  // comme au chargement : rien n'a encore ete pose
+    await initLang();    // AsyncStorage est vide dans les tests
+    expect(attributs.dir).toBe("rtl");
+  } finally {
+    delete (globalThis as any).document;
+  }
 });
 
 test("les sept langues sont traduites", () => {

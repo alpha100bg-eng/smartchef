@@ -88,12 +88,16 @@ export async function initLang(): Promise<void> {
     const stocke = await AsyncStorage.getItem(CLEF);
     if (stocke && LANGS.includes(stocke as Lang)) {
       courante = stocke as Lang;
-      appliquerSens(courante);
       abonnes.forEach((f) => f(courante));
     }
   } catch {
     // Stockage indisponible : la langue de l'appareil fait l'affaire.
   }
+  // Hors du `try` et hors du `if` : la langue peut venir de l'appareil sans
+  // qu'on ait rien mémorisé. Un téléphone réglé en arabe doit afficher une
+  // page retournée dès le premier chargement, pas seulement après un passage
+  // par le sélecteur de langue.
+  appliquerSens(courante);
 }
 
 export async function setLang(l: Lang): Promise<void> {
