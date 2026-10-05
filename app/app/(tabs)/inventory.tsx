@@ -341,7 +341,7 @@ export default function Inventory() {
                     <Pressable
                       onPress={() => removeItem(it.id)}
                       hitSlop={10}
-                      accessibilityLabel={`Retirer ${it.name} de l'inventaire`}
+                      accessibilityLabel={t("inventory.removeLabel", { name: it.name })}
                     >
                       <Ionicons
                         name="close-circle-outline"

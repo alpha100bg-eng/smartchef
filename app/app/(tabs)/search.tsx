@@ -363,7 +363,7 @@ export default function Search() {
                       accessibilityLabel={
                         savedIds[i] != null
                           ? t("search.keptLabel", { title: r.title })
-                          : `Garder ${r.title}`
+                          : t("search.keepLabel", { title: r.title })
                       }
                     >
                       <Ionicons

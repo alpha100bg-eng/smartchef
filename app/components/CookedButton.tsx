@@ -116,7 +116,7 @@ export function CookedButton({ usesInventory, onDone }: Props) {
             key={m.id}
             style={styles.row}
             onPress={() => setSelected((p) => ({ ...p, [m.id]: !on }))}
-            accessibilityLabel={`${on ? "Garder" : "Retirer"} ${m.name}`}
+            accessibilityLabel={t(on ? "cooked.keepLabel" : "cooked.removeLabel", { name: m.name })}
           >
             <Ionicons
               name={on ? "checkbox" : "square-outline"}

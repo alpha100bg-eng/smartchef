@@ -18,7 +18,7 @@ import {
   type ShoppingListView,
 } from "@/lib/shopping";
 import { fetchBillingStatus, hasFullAccess } from "@/lib/billing";
-import { LANGS, t, useLang } from "@/lib/i18n";
+import { LANGS, plural, t, useLang } from "@/lib/i18n";
 import { STRINGS } from "@/lib/strings";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { PremiumGate } from "@/components/PremiumGate";
@@ -272,7 +272,7 @@ export default function ShoppingList() {
           style={styles.secondaryBtn}
           onPress={storeBought}
           disabled={storing}
-          accessibilityLabel={`Ranger ${done} article${done > 1 ? "s" : ""} dans le frigo`}
+          accessibilityLabel={plural(done, "shopping.storeLabelOne", "shopping.storeLabelMany")}
         >
           <Ionicons name="file-tray-full-outline" size={18} color={colors.primaryDark} />
           <Text style={styles.secondaryBtnText}>

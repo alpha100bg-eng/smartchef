@@ -2,6 +2,7 @@ import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
+import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 /**
@@ -22,6 +23,8 @@ export function PremiumGate({
   icon?: React.ComponentProps<typeof Ionicons>["name"];
   price?: string;
 }) {
+  // Redessine ce bloc quand la langue change.
+  useLang();
   const router = useRouter();
 
   return (
@@ -35,10 +38,10 @@ export function PremiumGate({
       <Pressable
         style={styles.cta}
         onPress={() => router.push("/profile")}
-        accessibilityLabel="Voir l'abonnement Premium"
+        accessibilityLabel={t("premium.gateLabel")}
       >
         <Ionicons name="sparkles" size={17} color={colors.onPrimary} />
-        <Text style={styles.ctaText}>Découvrir Premium — {price} €/mois</Text>
+        <Text style={styles.ctaText}>{t("premium.gateCta", { price })}</Text>
       </Pressable>
     </View>
   );

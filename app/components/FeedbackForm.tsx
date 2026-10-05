@@ -84,7 +84,7 @@ export function FeedbackForm() {
             key={n}
             onPress={() => setRating(n)}
             hitSlop={6}
-            accessibilityLabel={`Mettre la note de ${n} sur 5`}
+            accessibilityLabel={t("feedback.rateLabel", { n })}
           >
             <Ionicons
               name={n <= rating ? "star" : "star-outline"}
