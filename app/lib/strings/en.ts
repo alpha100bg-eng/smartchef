@@ -247,5 +247,6 @@ export const en: Record<Key, string> = {
   "error.title": "Something went wrong",
   "error.session": "Session expired — please sign in again.",
   "error.unreachable": "Can't reach the server. Try again in a moment.",
+  "error.timeout": "The server is taking too long. Try again in a moment.",
   "error.server": "The server replied {code}.",
 };

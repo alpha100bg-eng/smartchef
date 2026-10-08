@@ -249,5 +249,6 @@ export const ar: Record<Key, string> = {
   "error.title": "حدث خطأ ما",
   "error.session": "انتهت الجلسة — سجّل الدخول من جديد.",
   "error.unreachable": "تعذّر الاتصال بالخادم. حاول بعد قليل.",
+  "error.timeout": "يستغرق الخادم وقتًا طويلًا. حاول مرة أخرى بعد قليل.",
   "error.server": "ردّ الخادم بالرمز {code}.",
 };

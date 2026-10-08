@@ -3,10 +3,29 @@ import { currentLang, t } from "./i18n";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL!;
 
+/**
+ * Délai au-delà duquel on cesse d'attendre.
+ *
+ * `fetch` n'abandonne jamais de lui-même dans un délai utile : un serveur qui
+ * accepte la connexion puis ne répond plus laissait l'utilisateur sur un rond
+ * qui tourne, sans message et sans moyen de recommencer.
+ *
+ * 60 secondes couvre largement une recherche ou une analyse de photo, démarrage
+ * à froid de Cloud Run compris. La génération du plan de la semaine est le seul
+ * appel réellement long — 56 s mesurées — et demande donc sa propre valeur :
+ * l'interrompre à 60 s couperait un appel qui allait aboutir, et facturerait
+ * les jetons sans rien rendre.
+ */
+const DELAI_DEFAUT_MS = 60_000;
+
 /** Reserved for AI-triggering endpoints (vision, meal-plan generation,
  * search). Plain CRUD on profile/inventory/lists goes through Supabase
  * directly, not through this wrapper. */
-export async function apiFetch(path: string, init: RequestInit = {}) {
+export async function apiFetch(
+  path: string,
+  init: RequestInit = {},
+  delaiMs: number = DELAI_DEFAUT_MS
+) {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -15,10 +34,20 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
     throw new Error(t("error.session"));
   }
 
+  const controleur = new AbortController();
+  // `expire` distingue notre abandon d'une annulation venue de l'appelant :
+  // sans lui, les deux ressortent comme la même AbortError.
+  let expire = false;
+  const minuteur = setTimeout(() => {
+    expire = true;
+    controleur.abort();
+  }, delaiMs);
+
   let response: Response;
   try {
     response = await fetch(`${API_URL}${path}`, {
       ...init,
+      signal: controleur.signal,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,
@@ -31,7 +60,9 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
     });
   } catch {
     // fetch only rejects on network-level failures (server down, no route)
-    throw new Error(t("error.unreachable"));
+    throw new Error(expire ? t("error.timeout") : t("error.unreachable"));
+  } finally {
+    clearTimeout(minuteur);
   }
 
   if (!response.ok) {

@@ -27,14 +27,29 @@ export function currentWeekStart(): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Le seul appel qui dépasse le délai commun.
+ *
+ * Mesuré à 56 s : quatorze recettes, leurs ingrédients et le coût estimé en
+ * une passe. Le délai par défaut de 60 s ne laisserait aucune marge pour un
+ * démarrage à froid, et couper ici est le pire moment — les jetons sont déjà
+ * dépensés, l'utilisateur n'a rien. Trois minutes dépassent franchement le
+ * pire cas observé tout en restant finies.
+ */
+const DELAI_PLAN_MS = 180_000;
+
 export async function generateMealPlan(
   weekStart: string,
   budget?: number
 ): Promise<MealPlanView> {
-  return apiFetch("/meal-plan/generate", {
-    method: "POST",
-    body: JSON.stringify({ week_start: weekStart, budget: budget ?? null }),
-  });
+  return apiFetch(
+    "/meal-plan/generate",
+    {
+      method: "POST",
+      body: JSON.stringify({ week_start: weekStart, budget: budget ?? null }),
+    },
+    DELAI_PLAN_MS
+  );
 }
 
 /**

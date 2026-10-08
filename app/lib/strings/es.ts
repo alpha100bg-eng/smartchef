@@ -250,5 +250,6 @@ export const es: Record<Key, string> = {
   "error.title": "Algo ha salido mal",
   "error.session": "Sesión caducada — vuelve a entrar.",
   "error.unreachable": "No se puede contactar con el servidor. Inténtalo en un momento.",
+  "error.timeout": "El servidor tarda demasiado. Inténtalo de nuevo en un momento.",
   "error.server": "El servidor ha respondido {code}.",
 };
