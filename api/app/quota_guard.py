@@ -8,28 +8,21 @@ les deux refus n'ont pas le même sens pour l'utilisateur :
 
 Dire « réessaie le mois prochain » à quelqu'un qui n'aura jamais accès à la
 fonctionnalité est la pire des deux erreurs possibles.
+
+Les textes viennent de `errors.py` : ce sont les deux messages qui précèdent
+immédiatement un abonnement, et les lire dans une langue étrangère ne donne
+pas envie de payer.
 """
 from fastapi import HTTPException, status
 
+from app import errors
+from app.lang import FR
 from app.services import quota
 from app.services.plan import PREMIUM_PRICE_EUR, PremiumRequired
 from app.services.quota import QuotaExceeded
 
-# Libellés au pluriel, tels qu'ils apparaissent dans le message.
-LABELS = {
-    "vision": "scans",
-    "search": "recherches",
-    "meal_plan": "plans de repas",
-    "shopping": "listes de courses",
-}
 
-FEATURE_NAMES = {
-    "meal_plan": "Le plan de la semaine",
-    "shopping": "La liste de courses",
-}
-
-
-def consume(profile_id: str, kind: str) -> None:
+def consume(profile_id: str, kind: str, lang: str = FR) -> None:
     """Consomme une unité de quota, ou lève la HTTPException qui convient."""
     try:
         quota.consume(profile_id, kind)
@@ -39,22 +32,34 @@ def consume(profile_id: str, kind: str) -> None:
         # qu'il est terminé. Inutile d'interroger la base pour le confirmer —
         # et rappeler ce qu'on vient de perdre convertit mieux qu'une phrase
         # générique.
-        nom = FEATURE_NAMES.get(exc.feature, "Cette fonctionnalité")
+        fonctionnalite = errors.FONCTIONNALITES.get(
+            exc.feature, errors.FONCTIONNALITES["_defaut"]
+        )
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail=(
-                f"Ton essai est terminé. {nom} reste disponible avec Premium "
-                f"({PREMIUM_PRICE_EUR} €/mois)."
+            detail=errors.texte(
+                errors.ESSAI_TERMINE,
+                lang,
+                fonctionnalite=errors.texte(fonctionnalite, lang),
+                prix=PREMIUM_PRICE_EUR,
             ),
         )
     except QuotaExceeded as exc:
-        label = LABELS.get(kind, kind)
-        suffix = (
-            " Passe en Premium pour en avoir plus."
+        label = errors.LABELS.get(kind)
+        suite = (
+            errors.QUOTA_SUITE_GRATUIT
             if exc.plan == "free"
-            else " Le compteur repart le 1er du mois."
+            else errors.QUOTA_SUITE_PAYANT
         )
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Tu as utilisé tes {exc.limit} {label} du mois.{suffix}",
+            detail=errors.texte(
+                errors.QUOTA,
+                lang,
+                limite=exc.limit,
+                # Une catégorie inconnue vaut mieux affichée telle quelle
+                # qu'omise : le message reste compréhensible.
+                label=errors.texte(label, lang) if label else kind,
+            )
+            + errors.texte(suite, lang),
         )

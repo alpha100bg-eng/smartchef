@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from app.deps import get_profile_id
 from app.lang import get_lang
 from app.models.inventory import FromPhotoRequest, VisionResult
-from app import quota_guard
+from app import errors, quota_guard
 from app.services import shelf_life, vision
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
@@ -39,15 +39,12 @@ def inventory_from_photo(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="storage_path does not belong to the caller",
         )
-    quota_guard.consume(profile_id, "vision")
+    quota_guard.consume(profile_id, "vision", lang)
 
     try:
         return vision.detect_from_storage_path(body.storage_path, lang)
-    except Exception as exc:  # signing failure, vision API error, parse error
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"vision detection failed: {exc}",
-        )
+    except Exception as exc:  # signature, erreur vision, parsing
+        raise errors.ia_indisponible("detection par photo", exc, lang)
 
 
 @router.post("/shelf-life", response_model=ShelfLifeResponse)
@@ -65,12 +62,9 @@ def estimate_shelf_life(
     Compté sur le quota `shopping` : cet appel prolonge le parcours courses, et
     ouvrir un quota dédié pour un appel Haiku ne se justifie pas.
     """
-    quota_guard.consume(profile_id, "shopping")
+    quota_guard.consume(profile_id, "shopping", lang)
 
     try:
         return ShelfLifeResponse(expiry_dates=shelf_life.estimate(body.names, lang))
     except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"shelf-life estimation failed: {exc}",
-        )
+        raise errors.ia_indisponible("estimation de peremption", exc, lang)

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,6 +12,15 @@ from app.routers import (
     profiles,
     search,
     shopping,
+)
+
+# Les réponses d'erreur ne portent plus le détail technique : il ne reste que
+# le journal pour savoir ce qui a réellement échoué. Sur Cloud Run, stderr est
+# collecté par Cloud Logging, donc la configuration par défaut suffit — mais
+# sans cet appel, le niveau WARNING masquerait tout ce qui est en dessous.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
 
 app = FastAPI(title="SmartChef AI API")

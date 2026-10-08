@@ -8,7 +8,7 @@ from app.models.meal_plan import (
     InstructionsResponse,
     MealPlanView,
 )
-from app import quota_guard
+from app import errors, quota_guard
 from app.services import meal_plan
 
 router = APIRouter(prefix="/meal-plan", tags=["meal-plan"])
@@ -22,15 +22,12 @@ def generate(
 ):
     """Generate + persist a weekly meal plan (F2) from the caller's inventory,
     profile, allergies and budget."""
-    quota_guard.consume(profile_id, "meal_plan")
+    quota_guard.consume(profile_id, "meal_plan", lang)
 
     try:
         return meal_plan.generate_meal_plan(profile_id, body.week_start, body.budget, lang)
     except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"meal-plan generation failed: {exc}",
-        )
+        raise errors.ia_indisponible("generation du plan", exc, lang)
 
 
 @router.post("/instructions", response_model=InstructionsResponse)
@@ -49,7 +46,7 @@ def instructions(
     coût qu'ouvrir une recette depuis la recherche. Le quota `meal_plan` doit
     rester réservé à la génération de la semaine.
     """
-    quota_guard.consume(profile_id, "search")
+    quota_guard.consume(profile_id, "search", lang)
 
     try:
         return InstructionsResponse(
@@ -58,10 +55,7 @@ def instructions(
     except LookupError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="not found")
     except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"instructions generation failed: {exc}",
-        )
+        raise errors.ia_indisponible("redaction des etapes", exc, lang)
 
 
 @router.get("/{plan_id}", response_model=MealPlanView)

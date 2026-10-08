@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.deps import get_profile_id
 from app.lang import get_lang
 from app.models.recipe import Recipe, RecipeDetailRequest, SearchRequest, SearchResult
-from app import quota_guard
+from app import errors, quota_guard
 from app.services import search
 
 router = APIRouter(tags=["search"])
@@ -22,15 +22,12 @@ def search_endpoint(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="query is required"
         )
-    quota_guard.consume(profile_id, "search")
+    quota_guard.consume(profile_id, "search", lang)
 
     try:
         return search.search_recipes(profile_id, query, lang)
     except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"search failed: {exc}",
-        )
+        raise errors.ia_indisponible("recherche de recettes", exc, lang)
 
 
 @router.post("/search/detail", response_model=Recipe)
@@ -41,14 +38,11 @@ def recipe_detail_endpoint(
 ):
     """Full recipe for one search result, generated when the user opens it.
     Keeps the listing fast and only bills recipes that are actually read."""
-    quota_guard.consume(profile_id, "search")
+    quota_guard.consume(profile_id, "search", lang)
 
     try:
         return search.recipe_detail(
             profile_id, body.title.strip(), body.teaser.strip(), lang
         )
     except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"recipe detail failed: {exc}",
-        )
+        raise errors.ia_indisponible("detail de recette", exc, lang)

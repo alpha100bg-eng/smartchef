@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel
 
+from app import errors
 from app.deps import get_profile_id
+from app.lang import get_lang
 from app.services import billing, plan as plan_svc, quota
 from app.services.billing import BillingUnavailable
 
@@ -54,25 +56,26 @@ def billing_status(profile_id: str = Depends(get_profile_id)):
 
 
 @router.post("/checkout", response_model=CheckoutResponse)
-def checkout(body: CheckoutRequest, profile_id: str = Depends(get_profile_id)):
+def checkout(
+    body: CheckoutRequest,
+    profile_id: str = Depends(get_profile_id),
+    lang: str = Depends(get_lang),
+):
     """Ouvre une session Stripe Checkout et renvoie l'URL de paiement."""
     if plan_svc.current_plan(profile_id) == plan_svc.PREMIUM:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Tu es déjà abonné.",
+            detail=errors.texte(errors.DEJA_ABONNE, lang),
         )
     try:
         return CheckoutResponse(url=billing.create_checkout(profile_id, body.email))
     except BillingUnavailable:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Le paiement n'est pas encore activé.",
+            detail=errors.texte(errors.PAIEMENT_INACTIF, lang),
         )
     except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=f"checkout failed: {exc}",
-        )
+        raise errors.paiement_indisponible("ouverture du paiement", exc, lang)
 
 
 @router.post("/webhook", include_in_schema=False)
