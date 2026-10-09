@@ -5,6 +5,7 @@ import { decode } from "base64-arraybuffer";
 import { supabase } from "./supabase";
 import { apiFetch } from "./api";
 import { notifyInventoryChanged } from "./urgent-count";
+import { t } from "./i18n";
 
 const BUCKET = "fridge-photos";
 const MAX_EDGE = 1568; // downscale target — balances label legibility vs cost
@@ -46,7 +47,7 @@ function randomId(): string {
  * or null if the user cancelled. */
 export async function captureAndUpload(): Promise<string | null> {
   const perm = await ImagePicker.requestCameraPermissionsAsync();
-  if (!perm.granted) throw new Error("Permission caméra refusée");
+  if (!perm.granted) throw new Error(t("error.camera"));
 
   const shot = await ImagePicker.launchCameraAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -67,7 +68,7 @@ export async function captureAndUpload(): Promise<string | null> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Session expirée");
+  if (!user) throw new Error(t("error.session"));
 
   const path = `${user.id}/${randomId()}.jpg`;
   const { error } = await supabase.storage
@@ -95,7 +96,7 @@ export async function saveItems(items: ReviewItem[]): Promise<void> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Session expirée");
+  if (!user) throw new Error(t("error.session"));
 
   const rows = items
     .filter((it) => it.name.trim())

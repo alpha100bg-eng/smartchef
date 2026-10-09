@@ -11,6 +11,7 @@
  */
 import { supabase } from "./supabase";
 import type { Recipe, RecipeIngredient } from "./search";
+import { t } from "./i18n";
 
 export type SavedRecipe = Recipe & { id: string; created_at: string };
 
@@ -36,7 +37,7 @@ export async function saveRecipe(recipe: Recipe): Promise<string> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Session expirée");
+  if (!user) throw new Error(t("error.session"));
 
   const { data, error } = await supabase
     .from("recipes")

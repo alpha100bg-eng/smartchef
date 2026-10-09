@@ -5,6 +5,7 @@
  * n'est impliquée, et l'API est réservée aux appels qui en déclenchent.
  */
 import { supabase } from "./supabase";
+import { t } from "./i18n";
 
 /** Version de l'app envoyée avec l'avis, pour savoir plus tard si un reproche
  * portait sur quelque chose de déjà corrigé. */
@@ -18,13 +19,13 @@ export type Feedback = {
 
 export async function sendFeedback(f: Feedback): Promise<void> {
   if (f.rating < 1 || f.rating > 5) {
-    throw new Error("Choisis une note avant d'envoyer.");
+    throw new Error(t("feedback.needRating"));
   }
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Session expirée");
+  if (!user) throw new Error(t("error.session"));
 
   const { error } = await supabase.from("feedback").insert({
     profile_id: user.id,

@@ -42,7 +42,6 @@ export default function Inventory() {
   useLang();
   const [items, setItems] = useState<Row[]>([]);
   const [review, setReview] = useState<ReviewItem[] | null>(null);
-  const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [busy, setBusy] = useState<null | "scan" | "save">(null);
   const [error, setError] = useState<string | null>(null);
   const [alertsOn, setAlertsOn] = useState(false);
@@ -86,15 +85,27 @@ export default function Inventory() {
   async function scan() {
     setError(null);
     setBusy("scan");
+    let chemin: string | null = null;
     try {
-      const path = await captureAndUpload();
-      if (!path) return; // cancelled
-      setPhotoPath(path);
-      const detected = await detectFromPhoto(path);
+      chemin = await captureAndUpload();
+      if (!chemin) return; // annulé
+      const detected = await detectFromPhoto(chemin);
       setReview(detected.map(toReviewItem));
     } catch (e: any) {
       setError(e.message ?? t("inventory.errScan"));
     } finally {
+      // La photo ne sert plus dès que la détection a répondu, qu'elle ait
+      // abouti ou non : elle n'est jamais réaffichée, elle n'existait que
+      // pour être analysée. Elle était supprimée à la validation de
+      // l'inventaire, donc un scan refusé — quota mensuel atteint, service
+      // indisponible — ou simplement abandonné la laissait indéfiniment dans
+      // le stockage. La minimisation des photos ne peut pas dépendre du
+      // chemin heureux.
+      if (chemin) {
+        // Un échec de suppression ne doit pas masquer l'erreur de scan, qui
+        // est la seule que l'utilisateur peut traiter.
+        await deletePhoto(chemin).catch(() => {});
+      }
       setBusy(null);
     }
   }
@@ -122,9 +133,7 @@ export default function Inventory() {
     setBusy("save");
     try {
       await saveItems(review);
-      if (photoPath) await deletePhoto(photoPath); // RGPD: minimisation
       setReview(null);
-      setPhotoPath(null);
       await loadInventory();
     } catch (e: any) {
       setError(e.message ?? t("inventory.errSave"));
@@ -133,10 +142,9 @@ export default function Inventory() {
     }
   }
 
-  async function cancelReview() {
-    if (photoPath) await deletePhoto(photoPath);
+  function cancelReview() {
+    // La photo est déjà supprimée depuis `scan` : il ne reste que l'écran.
     setReview(null);
-    setPhotoPath(null);
   }
 
   // ── Review mode ──────────────────────────────────────────────────

@@ -253,5 +253,6 @@ export const de: Record<Key, string> = {
   "error.session": "Sitzung abgelaufen — bitte neu anmelden.",
   "error.unreachable": "Server nicht erreichbar. Versuch es gleich nochmal.",
   "error.timeout": "Der Server braucht zu lange. Versuche es gleich noch einmal.",
+  "error.camera": "Kamerazugriff verweigert. Erlaube ihn in den Einstellungen.",
   "error.server": "Der Server hat {code} geantwortet.",
 };

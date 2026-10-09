@@ -274,5 +274,6 @@ export const fr = {
   "error.session": "Session expirée — reconnecte-toi.",
   "error.unreachable": "Impossible de joindre le serveur. Réessaie dans un instant.",
   "error.timeout": "Le serveur met trop de temps à répondre. Réessaie dans un instant.",
+  "error.camera": "Accès à la caméra refusé. Autorise-le dans les réglages.",
   "error.server": "Le serveur a répondu {code}.",
 } as const;

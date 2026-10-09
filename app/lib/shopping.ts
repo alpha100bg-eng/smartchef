@@ -1,6 +1,7 @@
 import { apiFetch } from "./api";
 import { supabase } from "./supabase";
 import { notifyInventoryChanged } from "./urgent-count";
+import { t } from "./i18n";
 
 export type ShoppingItem = {
   id: string | null;
@@ -67,7 +68,7 @@ export async function addBoughtToFridge(items: ShoppingItem[]): Promise<number> 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Session expirée");
+  if (!user) throw new Error(t("error.session"));
 
   const names = [...new Set(bought.map((i) => i.name.trim()))];
 

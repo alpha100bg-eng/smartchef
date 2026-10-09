@@ -15,23 +15,48 @@ import fs from "fs";
 import path from "path";
 
 const RACINE = path.join(__dirname, "..", "..");
-const DOSSIERS = ["app", "components"];
 
-function fichiers(dossier: string): string[] {
+function fichiers(dossier: string, extensions: string[]): string[] {
   const base = path.join(RACINE, dossier);
   if (!fs.existsSync(base)) return [];
   return fs.readdirSync(base, { withFileTypes: true }).flatMap((e) => {
     const p = path.join(dossier, e.name);
-    if (e.isDirectory()) return e.name === "__tests__" ? [] : fichiers(p);
-    return e.name.endsWith(".tsx") ? [p] : [];
+    if (e.isDirectory()) return e.name === "__tests__" ? [] : fichiers(p, extensions);
+    return extensions.some((x) => e.name.endsWith(x)) ? [p] : [];
   });
 }
 
-const SOURCES = fichiers("app").concat(fichiers("components"));
+/** Les écrans : tout texte entre balises y est visible. */
+const SOURCES = ["app", "components"].flatMap((d) => fichiers(d, [".tsx"]));
+
+/**
+ * La logique métier. Elle n'affiche rien elle-même, mais ses exceptions
+ * remontent telles quelles à l'écran — `setError(e.message)`. Six messages y
+ * sont restés en français bien après la traduction de l'app, précisément
+ * parce que ce test ne lisait que les `.tsx`.
+ */
+const MODULES = fichiers("lib", [".ts"]);
 
 test("les sources a verifier sont bien trouvees", () => {
   // Sans cette garde, un test qui ne lit aucun fichier passerait toujours.
   expect(SOURCES.length).toBeGreaterThan(5);
+  expect(MODULES.length).toBeGreaterThan(5);
+});
+
+test("aucune exception ne porte un message ecrit en dur", () => {
+  // `throw new Error("Session expirée")` finit dans `setError(e.message)`,
+  // donc à l'écran, en français, quelle que soit la langue choisie.
+  const enDur: string[] = [];
+  for (const f of MODULES) {
+    const lignes = fs.readFileSync(path.join(RACINE, f), "utf8").split("\n");
+    lignes.forEach((ligne, i) => {
+      const m = ligne.match(/throw new Error\(\s*(?:"([^"]*)"|`([^`]*)`)/);
+      if (!m) return;
+      const valeur = (m[1] ?? m[2] ?? "").replace(/\$\{[^}]*\}/g, "").trim();
+      if (/[\p{L}]{3}/u.test(valeur)) enDur.push(`${f}:${i + 1} → ${valeur}`);
+    });
+  }
+  expect(enDur).toEqual([]);
 });
 
 test("aucun libelle accessible n'est ecrit en dur", () => {

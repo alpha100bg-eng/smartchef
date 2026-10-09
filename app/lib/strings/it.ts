@@ -251,5 +251,6 @@ export const it: Record<Key, string> = {
   "error.session": "Sessione scaduta — accedi di nuovo.",
   "error.unreachable": "Impossibile contattare il server. Riprova tra poco.",
   "error.timeout": "Il server impiega troppo tempo. Riprova tra un istante.",
+  "error.camera": "Accesso alla fotocamera negato. Consentilo nelle impostazioni.",
   "error.server": "Il server ha risposto {code}.",
 };
