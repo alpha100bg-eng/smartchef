@@ -87,8 +87,18 @@ jobs:
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
 
+      # Sans ces balises, un lien partagé sur LinkedIn, WhatsApp ou dans une
+      # bio TikTok s'affiche en URL nue, sans titre ni image. Elles ne peuvent
+      # pas venir d'un `+html.tsx` : ce fichier n'est lu que par le rendu
+      # statique, qui échoue ici (le client Supabase exige un WebSocket au
+      # chargement du module). Le script échoue bruyamment si le HTML a changé
+      # de forme, plutôt que de publier une page sans carte d'aperçu.
+      - name: Ajouter les balises de partage
+        run: node scripts/injecter-meta.mjs dist
+
       # expo-router gère la navigation côté client : sans ce fichier, un
       # rechargement sur une sous-page renverrait une 404 de GitHub.
+      # Après l'injection, donc, pour que les sous-pages aient aussi la carte.
       - name: Rediriger les sous-pages vers l'app
         run: cp dist/index.html dist/404.html
 
