@@ -72,6 +72,12 @@ test("aucun libelle accessible n'est ecrit en dur", () => {
       const valeur = m[1] ?? m[2] ?? "";
       // Un gabarit purement interpolé (`${x}`) ne fige aucun texte.
       const sansInterpolation = valeur.replace(/\$\{[^}]*\}/g, "").trim();
+      // Un libellé qui n'est QUE le nom de la marque ne se traduit pas : le
+      // logo s'annonce « SmartChef » dans toutes les langues. L'exemption
+      // exige que chaque mot soit un invariant déclaré, pour qu'une vraie
+      // phrase contenant « SmartChef » reste refusée.
+      const mots = sansInterpolation.match(/[\p{L}][\p{L}'’-]*/gu) ?? [];
+      if (mots.length > 0 && mots.every((mot) => INVARIANTS.has(mot))) return;
       if (/[a-zA-Zà-öø-ÿ؀-ۿ]/.test(sansInterpolation)) {
         enDur.push(`${f}:${i + 1} → ${valeur}`);
       }

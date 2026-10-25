@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, TextInput, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, TextInput, Text, Pressable, ScrollView, StyleSheet, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -63,9 +63,13 @@ export default function Login() {
 
   const brand = (
     <View style={styles.brand}>
-      <View style={styles.logo}>
-        <Ionicons name="leaf" size={32} color={colors.onPrimary} />
-      </View>
+      {/* Le logo de la marque, pas une icone de la police : la toque et la
+          feuille en creux ne se composent pas avec un glyphe Ionicons. */}
+      <Image
+        source={require("@/assets/icon.png")}
+        style={styles.logo}
+        accessibilityLabel="SmartChef"
+      />
       <Text style={styles.title}>SmartChef</Text>
       <Text style={styles.tagline}>{t("login.tagline")}</Text>
     </View>
@@ -172,10 +176,9 @@ const styles = StyleSheet.create({
   logo: {
     width: 72,
     height: 72,
-    borderRadius: radius.pill,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
+    // Coins arrondis plutot qu'un cercle : l'icone du kit est carree, et un
+    // masque circulaire rognerait le bandeau orange de la toque.
+    borderRadius: radius.lg,
     marginBottom: spacing.md,
     ...shadow.button,
   },

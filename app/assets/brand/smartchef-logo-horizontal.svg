@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 160" width="620" height="160">
+  <title>SmartChef — logo horizontal</title>
+  <g transform="translate(16 16) scale(0.64)">
+  <rect width="200" height="200" rx="46" fill="#1F5E3B"/>
+  <g fill="#FFFFFF">
+    <circle cx="70" cy="100" r="28"/>
+    <circle cx="100" cy="82" r="32"/>
+    <circle cx="130" cy="100" r="28"/>
+    <rect x="70" y="98" width="60" height="42"/>
+  </g>
+  <rect x="70" y="146" width="60" height="20" rx="6" fill="#F26A3D"/>
+  <path d="M114 96 C116 112 108 124 88 128 C84 112 92 100 114 96 Z" fill="#1F5E3B"/>
+  </g>
+  <text x="172" y="100" font-family="Manrope, 'Segoe UI', Arial, sans-serif" font-weight="800" font-size="72" letter-spacing="-1.4" fill="#14201A">Smart<tspan fill="#1F5E3B">Chef</tspan></text>
+</svg>
