@@ -32,6 +32,11 @@ const IMAGE = `${SITE}og.png`;
 const BALISES = [
   `<meta name="description" content="${DESCRIPTION}">`,
   `<meta name="theme-color" content="#6FA83C">`,
+  // L'onglet n'affichait aucune icône : /favicon.ico renvoyait 404. Chemin
+  // relatif ici, contrairement aux images de partage — c'est le navigateur
+  // qui le résout, et il connaît déjà le sous-dossier du site.
+  `<link rel="icon" type="image/png" href="favicon.png">`,
+  `<link rel="apple-touch-icon" href="favicon.png">`,
   `<meta property="og:type" content="website">`,
   `<meta property="og:url" content="${SITE}">`,
   `<meta property="og:site_name" content="SmartChef">`,
