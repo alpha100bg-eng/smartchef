@@ -45,13 +45,18 @@ def police(taille: int, gras: bool = False) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
-def masque_feuille(taille: int, longueur: float = 0.80, largeur: float = 0.36) -> Image.Image:
-    """Une feuille est l'intersection de deux disques décalés en diagonale.
+def masque_feuille(
+    taille: int,
+    longueur: float = 0.74,
+    largeur: float = 0.40,
+    nervures: bool = True,
+) -> Image.Image:
+    """Masque d'une feuille : limbe, nervures et tige.
 
-    C'est ce qui donne les deux pointes opposées. Le rayon et l'écart sont
-    calculés à partir des proportions voulues, pas choisis à vue : avec des
-    valeurs approximatives la forme dépassait du cadre et PIL la coupait net,
-    ce qui donnait une feuille au bord plat.
+    Le limbe est l'intersection de deux disques — c'est ce qui donne les deux
+    pointes opposées. Le rayon et l'écart sont calculés à partir des
+    proportions voulues, pas choisis à vue : avec des valeurs approximatives
+    la forme dépassait du cadre et PIL la coupait net.
 
     Les pointes se forment perpendiculairement à l'axe des centres, donc
     `longueur` est l'étendue perpendiculaire et `largeur` celle qui suit cet
@@ -59,7 +64,16 @@ def masque_feuille(taille: int, longueur: float = 0.80, largeur: float = 0.36) -
 
         R = (longueur² + largeur²) / (4 · largeur)
 
-    Tracée à quatre fois la taille puis réduite : PIL n'antialiase pas ses
+    Tout est tracé feuille verticale, pointe en haut : les nervures s'y
+    calculent en deux lignes, alors qu'en diagonale il faudrait projeter
+    chaque point. L'inclinaison vient d'une rotation à la fin.
+
+    Sans nervures ni tige, la forme se lit « œil » ou « ballon », pas
+    « feuille ». `nervures=False` existe pour les très petites tailles, où des
+    traits de deux pixels disparaissent au rééchantillonnage et ne font que
+    salir la forme.
+
+    Tracé à quatre fois la taille puis réduit : PIL n'antialiase pas ses
     tracés, et sans ça les bords sont crénelés.
     """
     f = 4
@@ -68,17 +82,67 @@ def masque_feuille(taille: int, longueur: float = 0.80, largeur: float = 0.36) -
     R = (L * L + W * W) / (4 * W)
     d = 2 * R - W
 
-    # Centres posés de part et d'autre du centre du cadre, sur la diagonale.
-    ecart = (d / 2) / (2 ** 0.5)
-    cx = cy = t / 2
+    cx, cy = t / 2, t / 2
+    # La tige pousse vers le bas : on remonte la feuille pour que l'ensemble
+    # reste centré dans le cadre.
+    tige = t * 0.11
+    cy -= tige / 2
+
+    limbe = Image.new("L", (t, t), 0)
     disques = []
     for signe in (1, -1):
         m = Image.new("L", (t, t), 0)
-        x, y = cx + signe * ecart, cy - signe * ecart
-        ImageDraw.Draw(m).ellipse((x - R, y - R, x + R, y + R), fill=255)
+        x = cx + signe * d / 2
+        ImageDraw.Draw(m).ellipse((x - R, cy - R, x + R, cy + R), fill=255)
         disques.append(m)
+    limbe = ImageChops.darker(*disques)
 
-    return ImageChops.darker(*disques).resize((taille, taille), Image.LANCZOS)
+    haut, bas = cy - L / 2, cy + L / 2
+
+    # Tige : prolonge la feuille sous sa base, légèrement incurvée pour ne pas
+    # avoir l'air d'un clou planté dans le limbe.
+    d_limbe = ImageDraw.Draw(limbe)
+    d_limbe.line(
+        [
+            (cx, bas - t * 0.03),
+            (cx + t * 0.010, bas + tige * 0.45),
+            (cx + t * 0.032, bas + tige * 0.85),
+            (cx + t * 0.060, bas + tige),
+        ],
+        fill=255,
+        width=int(t * 0.040),
+        joint="curve",
+    )
+
+    if not nervures:
+        return limbe.resize((taille, taille), Image.LANCZOS)
+
+    # Les nervures sont retirées du limbe : le vert du disque réapparaît par
+    # ces traits. Dessinées à part puis limitées au limbe, sinon elles
+    # dépasseraient du bord.
+    creux = Image.new("L", (t, t), 0)
+    dc = ImageDraw.Draw(creux)
+    epaisseur = max(2, int(t * 0.016))
+
+    dc.line([(cx, haut + L * 0.06), (cx, bas - L * 0.02)], fill=255, width=epaisseur)
+
+    # Cinq paires de nervures latérales, qui raccourcissent vers la pointe —
+    # c'est cette décroissance qui fait lire la nervation. Elles s'arrêtent
+    # avant le bord : une nervure qui touche le contour le coupe et isole un
+    # éclat blanc, ce qui casse la silhouette au lieu de la décrire.
+    for i in range(5):
+        p = 0.20 + i * 0.135           # position le long de la nervure centrale
+        y = bas - L * p
+        portee = W * 0.46 * (1 - p * 0.55)
+        for signe in (1, -1):
+            dc.line(
+                [(cx, y), (cx + signe * portee, y - portee * 0.90)],
+                fill=255,
+                width=max(2, int(epaisseur * 0.7)),
+            )
+
+    creux = ImageChops.darker(creux, limbe)
+    return ImageChops.subtract(limbe, creux).resize((taille, taille), Image.LANCZOS)
 
 
 def pastille(cote: int, part_feuille: float = 0.60) -> Image.Image:
@@ -94,7 +158,13 @@ def pastille(cote: int, part_feuille: float = 0.60) -> Image.Image:
     ImageDraw.Draw(rond).ellipse((0, 0, t - 1, t - 1), fill=255)
 
     taille_feuille = int(t * part_feuille)
-    m = masque_feuille(taille_feuille)
+    # En dessous d'une quarantaine de pixels à l'écran, les nervures ne font
+    # plus que troubler la silhouette : le favicon garde une feuille pleine.
+    m = masque_feuille(taille_feuille, nervures=cote >= 96)
+    # Penchée : une feuille strictement verticale a l'air d'un pictogramme de
+    # signalisation. L'expansion est désactivée pour que la rotation ne
+    # change pas la taille du masque.
+    m = m.rotate(-32, resample=Image.BICUBIC, expand=False)
     pos = (t - taille_feuille) // 2
     img.paste(Image.new("RGB", m.size, BLANC), (pos, pos), m)
 
