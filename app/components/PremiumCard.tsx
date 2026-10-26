@@ -190,7 +190,10 @@ const styles = StyleSheet.create({
   soon: { color: colors.textMuted, fontSize: font.small, textAlign: "center" },
 
   cta: {
-    backgroundColor: colors.primary,
+    // Orange reserve aux boutons d'action : le bouton qui transforme un inscrit en abonne.
+    // Tous les boutons en orange annulerait la hierarchie — si tout
+    // crie, plus rien ne ressort.
+    backgroundColor: colors.accent,
     borderRadius: radius.pill,
     paddingVertical: 15,
     alignItems: "center",

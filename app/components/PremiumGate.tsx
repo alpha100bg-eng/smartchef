@@ -76,7 +76,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.xs,
-    backgroundColor: colors.primary,
+    // Orange reserve aux boutons d'action : l'ecran qui propose Premium quand une fonction est fermee.
+    // Tous les boutons en orange annulerait la hierarchie — si tout
+    // crie, plus rien ne ressort.
+    backgroundColor: colors.accent,
     borderRadius: radius.pill,
     paddingVertical: 15,
     paddingHorizontal: spacing.lg,

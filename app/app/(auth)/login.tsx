@@ -207,7 +207,10 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   button: {
-    backgroundColor: colors.primary,
+    // Orange reserve aux boutons d'action : le bouton qui transforme un visiteur en inscrit.
+    // Tous les boutons en orange annulerait la hierarchie — si tout
+    // crie, plus rien ne ressort.
+    backgroundColor: colors.accent,
     borderRadius: radius.pill,
     paddingVertical: 16,
     alignItems: "center",
