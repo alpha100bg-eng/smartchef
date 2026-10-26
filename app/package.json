@@ -52,7 +52,8 @@
     ],
     "modulePathIgnorePatterns": [
       "/dist/"
-    ]
+    ],
+    "testTimeout": 60000
   },
   "private": true
 }

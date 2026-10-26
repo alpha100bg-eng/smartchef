@@ -194,6 +194,8 @@ export const en: Record<Key, string> = {
   "cooked.remove": "Remove from my fridge",
   "cooked.done": "Fridge updated",
   "cooked.nothing": "Nothing to remove",
+  "cooked.nothingBody": "This recipe uses nothing we spotted in your fridge.",
+  "cooked.hint": "Untick whatever you still have — we only remove the rest.",
   "cooked.readError": "Couldn't read your fridge",
 
   "profile.title": "Profile",
@@ -245,6 +247,7 @@ export const en: Record<Key, string> = {
   "feedback.errSend": "Could not send",
 
   "error.title": "Something went wrong",
+  "error.body": "This screen failed to load. You can try again — your data is safe.",
   "error.session": "Session expired — please sign in again.",
   "error.unreachable": "Can't reach the server. Try again in a moment.",
   "error.timeout": "The server is taking too long. Try again in a moment.",

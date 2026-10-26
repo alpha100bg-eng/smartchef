@@ -22,7 +22,7 @@ import {
 } from "@/lib/inventory";
 import { registerForExpiryAlerts } from "@/lib/notifications";
 import { countUrgent, expiryLabel, sortByUrgency, urgency } from "@/lib/expiry";
-import { t, useLang } from "@/lib/i18n";
+import { plural, t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 
 type Row = {
@@ -209,7 +209,7 @@ export default function Inventory() {
                 onChangeText={(t) => updateRow(i, { expiry_date: t })}
               />
               <Text style={styles.hint}>
-                Estimation de conservation — corrige si tu connais la vraie date.
+                {t("inventory.expiryHint")}
               </Text>
               <TextInput
                 style={styles.input}
@@ -289,7 +289,7 @@ export default function Inventory() {
               </View>
               <Text style={styles.emptyTitle}>{t("inventory.emptyTitle")}</Text>
               <Text style={styles.emptyBody}>
-                Prends ton frigo en photo, on identifie les aliments pour toi.
+                {t("inventory.emptyBody")}
               </Text>
             </View>
           ) : (
@@ -298,8 +298,7 @@ export default function Inventory() {
                 <View style={styles.banner}>
                   <Ionicons name="time-outline" size={17} color={colors.warn} />
                   <Text style={styles.bannerText}>
-                    {urgentCount} aliment{urgentCount > 1 ? "s" : ""} à consommer
-                    rapidement
+                    {plural(urgentCount, "inventory.urgent", "inventory.urgentPlural")}
                   </Text>
                 </View>
               )}

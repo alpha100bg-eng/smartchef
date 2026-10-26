@@ -216,6 +216,8 @@ export const fr = {
   "cooked.remove": "Retirer de mon frigo",
   "cooked.done": "Frigo mis à jour",
   "cooked.nothing": "Rien à retirer",
+  "cooked.nothingBody": "Cette recette n'utilise aucun aliment identifié dans ton frigo.",
+  "cooked.hint": "Décoche ce qu'il te reste — on ne retire que le reste.",
   "cooked.readError": "Impossible de lire ton frigo",
 
   // ── Profil ──────────────────────────────────────────────────────
@@ -271,6 +273,7 @@ export const fr = {
 
   // ── Erreur générale ─────────────────────────────────────────────
   "error.title": "Quelque chose s'est mal passé",
+  "error.body": "L'écran n'a pas pu s'afficher. Tu peux réessayer — tes données sont intactes.",
   "error.session": "Session expirée — reconnecte-toi.",
   "error.unreachable": "Impossible de joindre le serveur. Réessaie dans un instant.",
   "error.timeout": "Le serveur met trop de temps à répondre. Réessaie dans un instant.",

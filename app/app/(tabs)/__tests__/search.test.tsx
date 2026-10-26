@@ -42,7 +42,7 @@ test("listing is fast: search returns summaries, no detail call yet", async () =
 
   // The expensive call must not happen just from listing.
   expect(mockDetail).not.toHaveBeenCalled();
-}, 20000);
+});
 
 test("opening a recipe fetches its full detail once", async () => {
   const { getByPlaceholderText, getByText, findByText } = render(<Search />);
@@ -64,4 +64,4 @@ test("opening a recipe fetches its full detail once", async () => {
   fireEvent.press(card);
   await findByText("Préparation");
   expect(mockDetail).toHaveBeenCalledTimes(1);
-}, 20000);
+});

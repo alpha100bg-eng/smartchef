@@ -157,8 +157,12 @@ export default function MealPlan() {
             color={overBudget ? colors.warn : colors.primaryDark}
           />
           <Text style={[styles.costText, overBudget && styles.costTextOver]}>
-            Coût estimé : {plan.estimated_cost ?? "?"} €
-            {plan.budget_target ? ` / budget ${plan.budget_target} €` : ""}
+            {plan.budget_target
+              ? t("plan.costBudget", {
+                  cost: plan.estimated_cost ?? "?",
+                  budget: plan.budget_target,
+                })
+              : t("plan.cost", { cost: plan.estimated_cost ?? "?" })}
           </Text>
         </View>
       )}
@@ -177,7 +181,7 @@ export default function MealPlan() {
           </View>
           <Text style={styles.emptyTitle}>{t("plan.emptyTitle")}</Text>
           <Text style={styles.emptyBody}>
-            Je compose ta semaine à partir de ton frigo, ton budget et ton régime.
+            {t("plan.emptyBody")}
           </Text>
         </View>
       ) : (
@@ -207,7 +211,7 @@ export default function MealPlan() {
                         <Text style={styles.slot}>{SLOT_LABELS[e.slot] ? t(SLOT_LABELS[e.slot]) : e.slot}</Text>
                         <Text style={styles.recipe}>{e.recipe.title}</Text>
                         {e.recipe.prep_time_min ? (
-                          <Text style={styles.meta}>{e.recipe.prep_time_min} min</Text>
+                          <Text style={styles.meta}>{e.recipe.prep_time_min} {t("search.minutes")}</Text>
                         ) : null}
 
                         {open && (
@@ -233,7 +237,7 @@ export default function MealPlan() {
                                   size="small"
                                 />
                                 <Text style={styles.mutedSmall}>
-                                  Écriture de la recette…
+                                  {t("search.writing")}
                                 </Text>
                               </View>
                             ) : (

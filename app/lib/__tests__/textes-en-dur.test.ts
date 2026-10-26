@@ -92,31 +92,75 @@ test("aucun libelle accessible n'est ecrit en dur", () => {
  */
 const INVARIANTS = new Set(["SmartChef", "Premium", "SmartChef AI"]);
 
+/**
+ * Un `{cond ? (…) : null}` qui s'étale sur plusieurs lignes laisse traîner un
+ * « : null} » que la règle prend pour du texte. Ces mots-là ne sont jamais
+ * affichés : ce sont des littéraux du langage, pas de la langue.
+ */
+const MOTS_CLES = new Set(["null", "undefined", "true", "false"]);
+
+/**
+ * Efface les expressions `{…}` d'un texte JSX capturé, en partant des plus
+ * internes. Ne reste que ce qui est réellement écrit en dur.
+ *
+ * Les passes successives ne sont pas un luxe : une expression imbriquée —
+ * `{cond ? t("k", { a: 1 }) : t("k2")}` — contient des accolades dans des
+ * accolades, et un seul `\{[^}]*\}` s'arrête à la première fermante. Il
+ * laisse une bouillie où le nom des clés passe pour du texte affiché.
+ *
+ * À n'appliquer QU'au texte capturé entre deux balises, jamais au fichier
+ * entier. Une version précédente comptait la profondeur sur tout le fichier :
+ * comme `export default function Ecran() {` ouvre une accolade, tout le JSX
+ * se trouvait à une profondeur non nulle et disparaissait. Le test ne lisait
+ * plus rien et serait resté vert quoi qu'on écrive.
+ */
+function sansInterpolations(texte: string): string {
+  let avant: string;
+  let s = texte;
+  do {
+    avant = s;
+    s = s.replace(/\{[^{}]*\}/g, " ");
+  } while (s !== avant);
+  return s;
+}
+
 test("aucun texte affiche n'est ecrit en dur dans le JSX", () => {
-  // Première version de ce test : chercher des mots-outils français. Elle
-  // laissait passer « Découvrir Premium — {price} €/mois », qui n'en contient
-  // aucun. La règle est donc inversée : tout texte littéral entre deux
-  // balises est suspect, quelle que soit la langue, car il devrait venir de
-  // `t()`. Seuls les invariants ci-dessus échappent.
+  // Trois versions de cette règle, et chacune a laissé passer de vrais oublis.
+  //
+  // 1. Chercher des mots-outils français : « Découvrir Premium — {price}
+  //    €/mois » n'en contient aucun.
+  // 2. Refuser tout littéral entre deux balises, mais ligne par ligne : onze
+  //    textes y ont échappé parce qu'un texte un peu long s'écrit sur trois
+  //    lignes, `<Text>` sur la première et `</Text>` sur la dernière. Celui
+  //    de l'écran frigo s'affichait en français en pleine interface arabe.
+  //
+  // D'où la version actuelle : le fichier entier est lu d'un bloc, les sauts
+  // de ligne compris. Le texte doit se terminer par une balise fermante
+  // `</` — sans cette condition, la flèche d'un `() => …` passe pour le
+  // début d'un texte et le test crie sur du code.
   const enDur: string[] = [];
   for (const f of SOURCES) {
-    const lignes = fs.readFileSync(path.join(RACINE, f), "utf8").split("\n");
-    lignes.forEach((ligne, i) => {
-      const nue = ligne.trim();
-      if (nue.startsWith("//") || nue.startsWith("*") || nue.startsWith("/*")) return;
-      for (const m of ligne.matchAll(/>([^<>{}\n][^<>\n]*)</g)) {
-        const texte = m[1].replace(/\$?\{[^}]*\}/g, " ").trim();
-        // On ne garde que les suites de lettres : « 4,99 », « € », « — »
-        // ne figent aucune langue.
-        const mots = texte.match(/[\p{L}][\p{L}'’-]*/gu) ?? [];
-        const parlants = mots.filter(
-          (mot) => mot.length >= 3 && !INVARIANTS.has(mot)
-        );
-        if (parlants.length > 0) {
-          enDur.push(`${f}:${i + 1} → ${texte}`);
-        }
+    const brut = fs.readFileSync(path.join(RACINE, f), "utf8");
+    // Les commentaires contiennent des phrases entières, en français de
+    // surcroît : sans les retirer, ils noieraient les vrais oublis.
+    const src = brut
+      .replace(/\/\*[\s\S]*?\*\//g, (bloc) => bloc.replace(/[^\n]/g, " "))
+      .replace(/^[ \t]*\/\/.*$/gm, "");
+
+    for (const m of src.matchAll(/>([^<>][^<>]*?)<\//gs)) {
+      const texte = sansInterpolations(m[1]).replace(/\s+/g, " ").trim();
+      // On ne garde que les suites de lettres : « 4,99 », « € », « — »
+      // ne figent aucune langue.
+      const mots = texte.match(/[\p{L}][\p{L}'’-]*/gu) ?? [];
+      const parlants = mots.filter(
+        (mot) =>
+          mot.length >= 3 && !INVARIANTS.has(mot) && !MOTS_CLES.has(mot)
+      );
+      if (parlants.length > 0) {
+        const ligne = src.slice(0, m.index).split("\n").length;
+        enDur.push(`${f}:${ligne} → ${texte}`);
       }
-    });
+    }
   }
   expect(enDur).toEqual([]);
 });

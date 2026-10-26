@@ -199,6 +199,8 @@ export const de: Record<Key, string> = {
   "cooked.remove": "Aus meinem Kühlschrank nehmen",
   "cooked.done": "Kühlschrank aktualisiert",
   "cooked.nothing": "Nichts zu entfernen",
+  "cooked.nothingBody": "Dieses Rezept nutzt nichts aus deinem erfassten Kühlschrank.",
+  "cooked.hint": "Hake ab, was du noch hast — wir entfernen nur den Rest.",
   "cooked.readError": "Dein Kühlschrank konnte nicht gelesen werden",
 
   "profile.title": "Profil",
@@ -250,6 +252,7 @@ export const de: Record<Key, string> = {
   "feedback.errSend": "Senden fehlgeschlagen",
 
   "error.title": "Da ist etwas schiefgelaufen",
+  "error.body": "Der Bildschirm konnte nicht geladen werden. Versuch es erneut — deine Daten sind sicher.",
   "error.session": "Sitzung abgelaufen — bitte neu anmelden.",
   "error.unreachable": "Server nicht erreichbar. Versuch es gleich nochmal.",
   "error.timeout": "Der Server braucht zu lange. Versuche es gleich noch einmal.",

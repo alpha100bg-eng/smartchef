@@ -125,7 +125,7 @@ export default function Onboarding() {
           </View>
           <Text style={styles.title}>{t("onboarding.trialTitle")}</Text>
           <Text style={styles.subtitle}>
-            Tout est ouvert, sans carte bancaire.
+            {t("onboarding.trialSub")}
           </Text>
 
           <View style={styles.list}>
@@ -207,7 +207,7 @@ export default function Onboarding() {
         </Text>
       </Pressable>
       <Text style={styles.note}>
-        Modifiable à tout moment dans ton profil.
+        {t("onboarding.editable")}
       </Text>
     </ScrollView>
   );

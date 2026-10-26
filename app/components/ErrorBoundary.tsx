@@ -32,8 +32,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
         </View>
         <Text style={styles.title}>{t("error.title")}</Text>
         <Text style={styles.body}>
-          L'écran n'a pas pu s'afficher. Tu peux réessayer — tes données sont
-          intactes.
+          {t("error.body")}
         </Text>
         <Text style={styles.detail} numberOfLines={3}>
           {error.message}

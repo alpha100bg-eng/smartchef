@@ -25,7 +25,7 @@ test("le formulaire est replié au départ", async () => {
   const { getByText, queryByText } = render(<FeedbackForm />);
   expect(getByText("Donner mon avis")).toBeTruthy();
   expect(queryByText("Ton avis")).toBeNull();
-}, 20000);
+});
 
 test("envoie la note et les deux réponses", async () => {
   const { getByText, getByPlaceholderText, findByText, getByLabelText } = render(
@@ -49,7 +49,7 @@ test("envoie la note et les deux réponses", async () => {
     })
   );
   await findByText("Merci — c'est noté.");
-}, 20000);
+});
 
 test("sans note, l'envoi est bloqué", async () => {
   const { getByText, findByText } = render(<FeedbackForm />);
@@ -58,7 +58,7 @@ test("sans note, l'envoi est bloqué", async () => {
   // Le bouton annonce ce qui manque plutôt que d'échouer après coup.
   fireEvent.press(getByText("Choisis une note"));
   expect(mockSend).not.toHaveBeenCalled();
-}, 20000);
+});
 
 test("un avis sans commentaire reste valable", async () => {
   const { getByText, findByText, getByLabelText } = render(<FeedbackForm />);
@@ -70,7 +70,7 @@ test("un avis sans commentaire reste valable", async () => {
   await waitFor(() =>
     expect(mockSend).toHaveBeenCalledWith({ rating: 5, liked: "", missing: "" })
   );
-}, 20000);
+});
 
 test("un échec d'envoi ne fait pas perdre ce qui a été écrit", async () => {
   mockSend.mockRejectedValue(new Error("Hors ligne"));
@@ -88,10 +88,10 @@ test("un échec d'envoi ne fait pas perdre ce qui a été écrit", async () => {
   // après un échec réseau, personne ne le fait deux fois.
   expect(getByPlaceholderText("Qu'est-ce qui t'a plu ?").props.value).toBe("Les couleurs");
   expect(queryByText("Merci — c'est noté.")).toBeNull();
-}, 20000);
+});
 
 test("propose un nouvel avis à qui en a déjà laissé un", async () => {
   mockHasGiven.mockResolvedValue(true);
   const { findByText } = render(<FeedbackForm />);
   await findByText("Donner un nouvel avis");
-}, 20000);
+});

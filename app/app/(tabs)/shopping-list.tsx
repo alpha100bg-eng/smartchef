@@ -197,7 +197,7 @@ export default function ShoppingList() {
           </View>
           <Text style={styles.emptyTitle}>{t("shopping.emptyTitle")}</Text>
           <Text style={styles.emptyBody}>
-            Je pars de ton plan de repas et je retire ce que tu as déjà.
+            {t("shopping.emptyBody")}
           </Text>
         </View>
       ) : (
@@ -261,8 +261,7 @@ export default function ShoppingList() {
         <View style={styles.doneBanner}>
           <Ionicons name="checkmark-circle" size={17} color={colors.primaryDark} />
           <Text style={styles.doneBannerText}>
-            {stored} article{stored > 1 ? "s" : ""} ajouté{stored > 1 ? "s" : ""} à ton
-            frigo
+            {plural(stored, "shopping.stored", "shopping.storedPlural")}
           </Text>
         </View>
       )}

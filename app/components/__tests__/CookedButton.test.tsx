@@ -32,7 +32,7 @@ test("removes only what the user says is finished", async () => {
 
   await waitFor(() => expect(mockRemove).toHaveBeenCalledWith(["a"]));
   await findByText("Frigo mis à jour");
-}, 20000);
+});
 
 test("removes everything when nothing is unticked", async () => {
   const { getByText, findByText } = render(
@@ -44,7 +44,7 @@ test("removes everything when nothing is unticked", async () => {
   fireEvent.press(getByText("Retirer de mon frigo"));
 
   await waitFor(() => expect(mockRemove).toHaveBeenCalledWith(["a", "b"]));
-}, 20000);
+});
 
 test("says so when the recipe touches nothing in the fridge", async () => {
   mockMatch.mockResolvedValueOnce([]);
@@ -54,4 +54,4 @@ test("says so when the recipe touches nothing in the fridge", async () => {
 
   await findByText("Rien à retirer");
   expect(mockRemove).not.toHaveBeenCalled();
-}, 20000);
+});

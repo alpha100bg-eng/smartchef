@@ -46,7 +46,7 @@ test("sign out revokes the push token BEFORE signOut (RLS needs the session)", a
   // Order is load-bearing: after signOut, auth.uid() is null and the RLS policy
   // on push_tokens rejects the delete, leaving an orphan token.
   expect(calls).toEqual(["unregister", "signOut"]);
-}, 20000);
+});
 
 test("sign out still happens if token revocation fails (Expo Go has no projectId)", async () => {
   mockUnregister.mockRejectedValueOnce(new Error("no projectId"));
@@ -55,4 +55,4 @@ test("sign out still happens if token revocation fails (Expo Go has no projectId
   fireEvent.press(getByText("Se déconnecter"));
 
   await waitFor(() => expect(mockSignOut).toHaveBeenCalled());
-}, 20000);
+});

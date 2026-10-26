@@ -102,9 +102,7 @@ export default function Login() {
         <Pressable style={styles.button} onPress={() => openForm("signup")}>
           <Text style={styles.buttonText}>{t("login.start")}</Text>
         </Pressable>
-        <Text style={styles.reassure}>
-          Sans installation, sans carte bancaire.
-        </Text>
+        <Text style={styles.reassure}>{t("login.reassure")}</Text>
 
         <Pressable onPress={() => openForm("signin")}>
           <Text style={styles.switch}>{t("login.haveAccount")}</Text>

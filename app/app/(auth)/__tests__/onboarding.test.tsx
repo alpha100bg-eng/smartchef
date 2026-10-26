@@ -45,7 +45,7 @@ test("l'essai est annoncé avant toute demande", () => {
   expect(getByText(/sans carte bancaire/)).toBeTruthy();
   // Aucun champ à remplir sur ce premier écran.
   expect(queryByPlaceholderText(/Autre allergie/)).toBeNull();
-}, 20000);
+});
 
 test("une seule question, et elle porte sur la sécurité", () => {
   const { getByText, queryByPlaceholderText } = render(<Onboarding />);
@@ -57,7 +57,7 @@ test("une seule question, et elle porte sur la sécurité", () => {
   expect(queryByPlaceholderText(/Budget hebdomadaire/)).toBeNull();
   expect(queryByPlaceholderText(/Temps par repas/)).toBeNull();
   expect(queryByPlaceholderText(/Objectifs/)).toBeNull();
-}, 20000);
+});
 
 test("on peut entrer sans rien renseigner", async () => {
   const { getByText } = render(<Onboarding />);
@@ -68,7 +68,7 @@ test("on peut entrer sans rien renseigner", async () => {
   // Rien à enregistrer : aucune écriture inutile.
   expect(mockUpdate).not.toHaveBeenCalled();
   expect(mockInsert).not.toHaveBeenCalled();
-}, 20000);
+});
 
 test("le régime se choisit en un appui et s'enregistre dans une langue stable", async () => {
   const { getByText } = render(<Onboarding />);
@@ -83,7 +83,7 @@ test("le régime se choisit en un appui et s'enregistre dans une langue stable",
   await waitFor(() =>
     expect(mockUpdate).toHaveBeenCalledWith("profiles", { diet_type: "vegetarian" })
   );
-}, 20000);
+});
 
 test("les allergènes courants s'ajoutent sans faute de frappe", async () => {
   const { getByText } = render(<Onboarding />);
@@ -97,7 +97,7 @@ test("les allergènes courants s'ajoutent sans faute de frappe", async () => {
   const [table, rows] = mockInsert.mock.calls[0];
   expect(table).toBe("allergies");
   expect(rows.map((r: any) => r.label)).toEqual(["Arachide", "Lactose"]);
-}, 20000);
+});
 
 test("un allergène se retire d'un second appui", async () => {
   const { getByText } = render(<Onboarding />);
@@ -109,7 +109,7 @@ test("un allergène se retire d'un second appui", async () => {
 
   await waitFor(() => expect(mockReplace).toHaveBeenCalled());
   expect(mockInsert).not.toHaveBeenCalled();
-}, 20000);
+});
 
 test("les allergies libres complètent les choix", async () => {
   const { getByText, getByPlaceholderText } = render(<Onboarding />);
@@ -128,7 +128,7 @@ test("les allergies libres complètent les choix", async () => {
     "céleri",
     "moutarde",
   ]);
-}, 20000);
+});
 
 test("une allergie non enregistrée bloque l'entrée", async () => {
   // Laisser passer silencieusement exposerait à une recette dangereuse.
@@ -141,4 +141,4 @@ test("une allergie non enregistrée bloque l'entrée", async () => {
 
   await findByText("réseau");
   expect(mockReplace).not.toHaveBeenCalled();
-}, 20000);
+});

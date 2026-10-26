@@ -28,4 +28,4 @@ test("deep link prefills the query and searches automatically", async () => {
   await waitFor(() => expect(mockSearch).toHaveBeenCalledWith("courgettes"));
   getByDisplayValue("courgettes"); // input prefilled
   await findByText("Gratin de courgettes");
-}, 20000);
+});

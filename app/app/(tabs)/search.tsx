@@ -200,7 +200,7 @@ export default function Search() {
             </View>
             <Text style={styles.emptyTitle}>{t("search.emptyTitle")}</Text>
             <Text style={styles.emptyBody}>
-              Je propose des recettes avec ce que tu as déjà.
+              {t("search.emptyBody")}
             </Text>
           </View>
         ) : (

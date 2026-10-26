@@ -38,7 +38,7 @@ test("un visiteur voit ce que fait l'app, pas un formulaire", () => {
   expect(getByText("Reçois des recettes")).toBeTruthy();
   expect(getByText("Ne rachète rien en double")).toBeTruthy();
   expect(queryByPlaceholderText("Mot de passe")).toBeNull();
-}, 20000);
+});
 
 test("l'accueil suit la langue choisie", async () => {
   // Le bug vu en production : les textes de cet écran étaient construits au
@@ -53,7 +53,7 @@ test("l'accueil suit la langue choisie", async () => {
   } finally {
     await setLang("fr");
   }
-}, 20000);
+});
 
 test("« Commencer gratuitement » ouvre la création de compte", () => {
   const { getByText, getByPlaceholderText } = render(<Login />);
@@ -62,7 +62,7 @@ test("« Commencer gratuitement » ouvre la création de compte", () => {
 
   expect(getByPlaceholderText("Mot de passe")).toBeTruthy();
   expect(getByText("Créer un compte")).toBeTruthy();
-}, 20000);
+});
 
 test("un utilisateur qui revient atteint la connexion en un geste", () => {
   const { getByText, getByPlaceholderText } = render(<Login />);
@@ -71,7 +71,7 @@ test("un utilisateur qui revient atteint la connexion en un geste", () => {
 
   expect(getByPlaceholderText("Email")).toBeTruthy();
   expect(getByText("Se connecter")).toBeTruthy();
-}, 20000);
+});
 
 test("on peut revenir à l'explication depuis le formulaire", () => {
   const { getByText, queryByPlaceholderText } = render(<Login />);
@@ -81,7 +81,7 @@ test("on peut revenir à l'explication depuis le formulaire", () => {
 
   expect(queryByPlaceholderText("Mot de passe")).toBeNull();
   expect(getByText("Commencer gratuitement")).toBeTruthy();
-}, 20000);
+});
 
 test("la connexion appelle bien Supabase", async () => {
   const { getByText, getByPlaceholderText } = render(<Login />);
@@ -92,4 +92,4 @@ test("la connexion appelle bien Supabase", async () => {
   fireEvent.press(getByText("Se connecter"));
 
   expect(mockSignIn).toHaveBeenCalledWith({ email: "a@b.c", password: "secret" });
-}, 20000);
+});

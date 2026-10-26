@@ -93,7 +93,7 @@ export function CookedButton({ usesInventory, onDone }: Props) {
       <View style={styles.panel}>
         <Text style={styles.panelTitle}>{t("cooked.nothing")}</Text>
         <Text style={styles.panelBody}>
-          Cette recette n'utilise aucun aliment identifié dans ton frigo.
+          {t("cooked.nothingBody")}
         </Text>
         <Pressable onPress={() => setMatches(null)}>
           <Text style={styles.cancel}>{t("common.close")}</Text>
@@ -106,7 +106,7 @@ export function CookedButton({ usesInventory, onDone }: Props) {
     <View style={styles.panel}>
       <Text style={styles.panelTitle}>{t("cooked.question")}</Text>
       <Text style={styles.panelBody}>
-        Décoche ce qu'il te reste — on ne retire que le reste.
+        {t("cooked.hint")}
       </Text>
 
       {matches.map((m) => {

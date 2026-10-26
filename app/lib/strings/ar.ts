@@ -196,6 +196,8 @@ export const ar: Record<Key, string> = {
   "cooked.remove": "إزالة من ثلاجتي",
   "cooked.done": "تم تحديث الثلاجة",
   "cooked.nothing": "لا شيء لإزالته",
+  "cooked.nothingBody": "لا تستخدم هذه الوصفة أي طعام موجود في ثلاجتك.",
+  "cooked.hint": "ألغِ تحديد ما تبقى لديك — لن نزيل سوى الباقي.",
   "cooked.readError": "تعذرت قراءة محتويات ثلاجتك",
 
   "profile.title": "الملف الشخصي",
@@ -247,6 +249,7 @@ export const ar: Record<Key, string> = {
   "feedback.errSend": "تعذّر الإرسال",
 
   "error.title": "حدث خطأ ما",
+  "error.body": "تعذر عرض الشاشة. يمكنك المحاولة مجددًا — بياناتك سليمة.",
   "error.session": "انتهت الجلسة — سجّل الدخول من جديد.",
   "error.unreachable": "تعذّر الاتصال بالخادم. حاول بعد قليل.",
   "error.timeout": "يستغرق الخادم وقتًا طويلًا. حاول مرة أخرى بعد قليل.",

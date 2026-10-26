@@ -45,7 +45,7 @@ test("scan → review → validate saves items and deletes the photo", async () 
 
   await waitFor(() => expect(mockSave).toHaveBeenCalled());
   expect(mockDelete).toHaveBeenCalledWith("profileA/x.jpg");
-}, 20000);
+});
 
 test("la photo est supprimee meme quand la detection echoue", async () => {
   // Le cas qui fuyait : la photo n'était effacée qu'à la validation de
@@ -64,7 +64,7 @@ test("la photo est supprimee meme quand la detection echoue", async () => {
   await findByText("Tu as utilisé tes 3 scans du mois.");
   // …et la photo n'est pas restée derrière.
   await waitFor(() => expect(mockDelete).toHaveBeenCalledWith("profileA/x.jpg"));
-}, 20000);
+});
 
 test("un echec de suppression ne masque pas l'erreur de scan", async () => {
   // La suppression est du ménage : si elle échoue aussi, l'utilisateur doit
@@ -76,4 +76,4 @@ test("un echec de suppression ne masque pas l'erreur de scan", async () => {
   fireEvent.press(getByText("Scanner mon frigo"));
 
   await findByText("Le service n'a pas répondu.");
-}, 20000);
+});

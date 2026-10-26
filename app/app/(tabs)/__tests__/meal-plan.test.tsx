@@ -73,7 +73,7 @@ test("le budget saisi part avec la génération et est mémorisé", async () => 
 
   await waitFor(() => expect(mockGenerate).toHaveBeenCalledWith("2026-08-03", 60));
   await waitFor(() => expect(mockRememberBudget).toHaveBeenCalledWith(60));
-}, 20000);
+});
 
 test("sans budget, aucune contrainte n'est envoyée", async () => {
   const { getByText, findByText } = render(<MealPlan />);
@@ -85,7 +85,7 @@ test("sans budget, aucune contrainte n'est envoyée", async () => {
     expect(mockGenerate).toHaveBeenCalledWith("2026-08-03", undefined)
   );
   expect(mockRememberBudget).not.toHaveBeenCalled();
-}, 20000);
+});
 
 test("une saisie absurde ne devient pas une contrainte", async () => {
   const { getByText, getByPlaceholderText, findByText } = render(<MealPlan />);
@@ -97,7 +97,7 @@ test("une saisie absurde ne devient pas une contrainte", async () => {
   await waitFor(() =>
     expect(mockGenerate).toHaveBeenCalledWith("2026-08-03", undefined)
   );
-}, 20000);
+});
 
 test("un budget déjà connu est pré-rempli", async () => {
   mockLoadBudget.mockResolvedValue(75);
@@ -110,7 +110,7 @@ test("un budget déjà connu est pré-rempli", async () => {
       getByPlaceholderText("Budget de la semaine (optionnel)").props.value
     ).toBe("75")
   );
-}, 20000);
+});
 
 // ── Le plan de repas est réservé au Premium ───────────────────────
 test("un compte gratuit voit l'offre, pas le bouton", async () => {
@@ -121,7 +121,7 @@ test("un compte gratuit voit l'offre, pas le bouton", async () => {
   await findByText(/Découvrir Premium/);
   expect(queryByText("Générer ma semaine")).toBeNull();
   expect(mockGenerate).not.toHaveBeenCalled();
-}, 20000);
+});
 
 test("un compte en essai accède au plan", async () => {
   // Tout l'intérêt de l'essai : faire vivre la fonctionnalité qu'un compte
@@ -132,7 +132,7 @@ test("un compte en essai accède au plan", async () => {
 
   await findByText("Générer ma semaine");
   expect(queryByText(/Découvrir Premium/)).toBeNull();
-}, 20000);
+});
 
 test("si le palier est inconnu, l'écran reste utilisable", async () => {
   // API endormie ou hors ligne : mieux vaut laisser essayer — le serveur
@@ -141,7 +141,7 @@ test("si le palier est inconnu, l'écran reste utilisable", async () => {
 
   const { findByText } = render(<MealPlan />);
   await findByText("Générer ma semaine");
-}, 20000);
+});
 
 test("génère la semaine avec le coût et les recettes", async () => {
   const { getByText, findByText } = render(<MealPlan />);
@@ -151,7 +151,7 @@ test("génère la semaine avec le coût et les recettes", async () => {
   await findByText("Poulet rôti riz brocoli");
   await findByText(/Coût estimé : 55/);
   await waitFor(() => expect(mockGenerate).toHaveBeenCalledWith("2026-08-03", undefined));
-}, 20000);
+});
 
 test("la préparation n'est demandée qu'à l'ouverture de la recette", async () => {
   const { getByText, findByText } = render(<MealPlan />);
@@ -165,7 +165,7 @@ test("la préparation n'est demandée qu'à l'ouverture de la recette", async ()
 
   await findByText("1. Rôtir le poulet 25 min à 200 °C.");
   expect(mockFetchInstructions).toHaveBeenCalledWith("rec-1");
-}, 20000);
+});
 
 test("une recette rouverte ne relance pas d'appel", async () => {
   const { getByText, findByText } = render(<MealPlan />);
@@ -179,7 +179,7 @@ test("une recette rouverte ne relance pas d'appel", async () => {
 
   await findByText("1. Rôtir le poulet 25 min à 200 °C.");
   expect(mockFetchInstructions).toHaveBeenCalledTimes(1);
-}, 20000);
+});
 
 test("une recette déjà rédigée côté serveur n'est pas redemandée", async () => {
   mockGenerate.mockResolvedValue(
@@ -193,7 +193,7 @@ test("une recette déjà rédigée côté serveur n'est pas redemandée", async 
 
   await findByText("1. Déjà écrite.");
   expect(mockFetchInstructions).not.toHaveBeenCalled();
-}, 20000);
+});
 
 test("un échec de rédaction est signalé sans casser le plan", async () => {
   mockFetchInstructions.mockRejectedValue(new Error("Limite atteinte : 15 recettes par jour."));
@@ -206,4 +206,4 @@ test("un échec de rédaction est signalé sans casser le plan", async () => {
   await findByText("Limite atteinte : 15 recettes par jour.");
   // Le reste du plan reste consultable.
   expect(getByText("Poulet rôti riz brocoli")).toBeTruthy();
-}, 20000);
+});

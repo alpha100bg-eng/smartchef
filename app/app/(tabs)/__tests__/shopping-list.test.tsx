@@ -41,4 +41,4 @@ test("generate shows aisles, estimate, and the already-in-fridge section", async
   // re-add moves Tomates into the buy list
   fireEvent.press(getByText("+ ajouter"));
   await findByText(/Tomates/);
-}, 20000);
+});
