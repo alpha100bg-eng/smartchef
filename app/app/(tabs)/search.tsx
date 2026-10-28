@@ -26,6 +26,7 @@ import {
 import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { CookedButton } from "@/components/CookedButton";
+import { suivre } from "@/lib/analytics";
 
 // Des clés, pas des textes : ce module est chargé avant qu'initLang ait lu la
 // langue mémorisée, donc un `t` appelé ici figerait les suggestions.
@@ -101,7 +102,11 @@ export default function Search() {
     setExpanded(null);
     setDetails({});
     try {
-      setRecipes(await searchRecipes(text));
+      const trouvees = await searchRecipes(text);
+      setRecipes(trouvees);
+      // Le nombre de resultats, jamais la requete : ce que quelqu'un cherche
+      // a manger ne regarde pas un tableau de bord.
+      void suivre("recherche_lancee", { resultats: trouvees.length });
     } catch (e: any) {
       setError(e.message ?? t("search.errSearch"));
     } finally {

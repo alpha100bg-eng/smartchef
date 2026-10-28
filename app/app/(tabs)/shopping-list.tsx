@@ -22,6 +22,7 @@ import { LANGS, plural, t, useLang } from "@/lib/i18n";
 import { STRINGS } from "@/lib/strings";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { PremiumGate } from "@/components/PremiumGate";
+import { suivre } from "@/lib/analytics";
 
 /**
  * Icône par rayon.
@@ -82,6 +83,7 @@ export default function ShoppingList() {
         return;
       }
       const result = await buildFromPlan(planId);
+      void suivre("liste_generee", { articles: result.items.length });
       setList(result);
       setItems(result.items);
       setInFridge(result.already_in_fridge);

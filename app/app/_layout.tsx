@@ -6,6 +6,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { itemNameFromNotification } from "@/lib/notifications";
 import { initLang } from "@/lib/i18n";
+import { identifier, oublier } from "@/lib/analytics";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function RootLayout() {
@@ -31,6 +32,14 @@ export default function RootLayout() {
     );
     return () => subscription.subscription.unsubscribe();
   }, []);
+
+  // La mesure suit la session, pas l'inverse : personne n'est identifié tant
+  // qu'il n'est pas connecté, et l'identité est effacée à la déconnexion pour
+  // ne pas attribuer la suite au compte précédent sur un appareil partagé.
+  useEffect(() => {
+    if (session?.user?.id) void identifier(session.user.id);
+    else void oublier();
+  }, [session?.user?.id]);
 
   useEffect(() => {
     if (loading) return;

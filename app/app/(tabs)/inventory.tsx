@@ -24,6 +24,7 @@ import { registerForExpiryAlerts } from "@/lib/notifications";
 import { countUrgent, expiryLabel, sortByUrgency, urgency } from "@/lib/expiry";
 import { plural, t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
+import { suivre } from "@/lib/analytics";
 
 type Row = {
   id: string;
@@ -86,12 +87,18 @@ export default function Inventory() {
     setError(null);
     setBusy("scan");
     let chemin: string | null = null;
+    void suivre("scan_lance");
     try {
       chemin = await captureAndUpload();
       if (!chemin) return; // annulé
       const detected = await detectFromPhoto(chemin);
       setReview(detected.map(toReviewItem));
+      void suivre("scan_reussi", { aliments: detected.length });
     } catch (e: any) {
+      // On enregistre qu'il y a eu echec, pas le message : il peut contenir
+      // le texte d'une erreur serveur, donc des details qui ne regardent pas
+      // un tableau de bord.
+      void suivre("scan_echoue");
       setError(e.message ?? t("inventory.errScan"));
     } finally {
       // La photo ne sert plus dès que la détection a répondu, qu'elle ait
@@ -133,6 +140,7 @@ export default function Inventory() {
     setBusy("save");
     try {
       await saveItems(review);
+      void suivre("inventaire_rempli", { aliments: review.length });
       setReview(null);
       await loadInventory();
     } catch (e: any) {

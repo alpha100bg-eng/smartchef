@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { t, useLang } from "@/lib/i18n";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
+import { suivre } from "@/lib/analytics";
 
 /**
  * Écran affiché à la place d'une fonctionnalité réservée au Premium.
@@ -26,6 +28,12 @@ export function PremiumGate({
   // Redessine ce bloc quand la langue change.
   useLang();
   const router = useRouter();
+
+  // Cet ecran ne s'affiche que quand quelqu'un bute sur une fonction fermee.
+  // C'est l'instant exact ou un essai se transforme en abonnement, ou pas.
+  useEffect(() => {
+    void suivre("premium_bloque");
+  }, []);
 
   return (
     <View style={styles.wrap}>

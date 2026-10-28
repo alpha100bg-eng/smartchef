@@ -25,6 +25,7 @@ import type { Key } from "@/lib/strings";
 import { colors, radius, spacing, font, shadow } from "@/lib/theme";
 import { CookedButton } from "@/components/CookedButton";
 import { PremiumGate } from "@/components/PremiumGate";
+import { suivre } from "@/lib/analytics";
 
 // Des clés, pas des textes : ce module est chargé avant qu'initLang ait lu la
 // langue mémorisée, donc un `t` appelé ici figerait les libellés de repas.
@@ -92,6 +93,7 @@ export default function MealPlan() {
       const n = Number(budget.trim());
       const valide = budget.trim() && Number.isFinite(n) && n > 0 ? n : undefined;
       setPlan(await generateMealPlan(currentWeekStart(), valide));
+      void suivre("plan_genere", { budget: valide != null });
       if (valide) void rememberBudget(valide);
     } catch (e: any) {
       setError(e.message ?? t("plan.errGenerate"));
