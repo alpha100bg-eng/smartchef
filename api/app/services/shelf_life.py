@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.lang import FR, output_clause
+from app.services import shelf_life_table
 
 SHELF_LIFE_MODEL = "claude-haiku-4-5"
 
@@ -73,11 +74,31 @@ def to_expiry_dates(
 def estimate(names: list[str], lang: str = FR) -> dict[str, str | None]:
     """Nom d'aliment -> date de péremption estimée (ISO), ou None.
 
+    La table est consultée en premier. Ce qu'elle connaît est répondu sans
+    appel au modèle : c'est gratuit, instantané, et surtout identique d'un
+    appel à l'autre — deux utilisateurs obtenaient jusqu'ici des durées
+    différentes pour le même aliment. Le modèle ne traite plus que ce que la
+    table ignore, donc la couverture ne régresse pas.
+
     Les noms absents de la réponse sont simplement absents du dictionnaire :
     l'appelant insère alors sans date plutôt que d'inventer.
     """
     if not names:
         return {}
+
+    connus = ShelfLifeResult(items=[])
+    restants: list[str] = []
+    for nom in names:
+        jours = shelf_life_table.chercher(nom, lang)
+        if jours is shelf_life_table.INCONNU:
+            restants.append(nom)
+        else:
+            connus.items.append(ShelfLife(name=nom, days=jours))
+
+    dates = to_expiry_dates(connus)
+    if not restants:
+        return dates
+
     response = _client().messages.parse(
         model=SHELF_LIFE_MODEL,
         max_tokens=1500,
@@ -88,7 +109,8 @@ def estimate(names: list[str], lang: str = FR) -> dict[str, str | None]:
                 "cache_control": {"type": "ephemeral"},
             }
         ],
-        messages=[{"role": "user", "content": "\n".join(names)}],
+        messages=[{"role": "user", "content": "\n".join(restants)}],
         output_format=ShelfLifeResult,
     )
-    return to_expiry_dates(response.parsed_output)
+    dates.update(to_expiry_dates(response.parsed_output))
+    return dates
